@@ -20,7 +20,7 @@
 package sniffer
 
 import (
-	"errors"
+	"fmt"
 	"syscall"
 	"time"
 	"unsafe"
@@ -109,10 +109,10 @@ func isPromiscEnabled(device string) (bool, error) {
 		flags uint16
 	}
 
-	copy(ifl.name[:], []byte(name))
+	copy(ifl.name[:], []byte(device))
 	_, _, ep := syscall.Syscall(syscall.SYS_IOCTL, uintptr(s), syscall.SIOCGIFFLAGS, uintptr(unsafe.Pointer(&ifl)))
 	if ep != 0 {
-		return false, errors.New("Syscall SIOCGIFFLAGS exited with %v", ep)
+		return false, fmt.Errorf("Syscall SIOCGIFFLAGS exited with %v", ep)
 	}
 
 	return ifl.flags&uint16(syscall.IFF_PROMISC) != 0, nil
