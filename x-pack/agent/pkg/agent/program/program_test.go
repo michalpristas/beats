@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/elastic/beats/x-pack/agent/pkg/agent/application/filters"
 	"github.com/elastic/beats/x-pack/agent/pkg/agent/internal/yamltest"
 	"github.com/elastic/beats/x-pack/agent/pkg/agent/transpiler"
 )
@@ -418,6 +419,10 @@ func TestConfiguration(t *testing.T) {
 			programs: []string{"filebeat", "metricbeat"},
 			expected: 2,
 		},
+		"constraints_config": {
+			programs: []string{"filebeat"},
+			expected: 1,
+		},
 		// "audit_config": {
 		// 	programs: []string{"auditbeat"},
 		// 	expected: 1,
@@ -457,6 +462,8 @@ func TestConfiguration(t *testing.T) {
 
 			ast, err := transpiler.NewAST(m)
 			require.NoError(t, err)
+
+			filters.ConstraintFilter(ast)
 
 			programs, err := Programs(ast)
 			if test.err {
