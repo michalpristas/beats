@@ -12,7 +12,8 @@ RUN mkdir -p {{ $beatHome }}/data {{ $beatHome }}/data/logs && \
     chown -R root:root {{ $beatHome }} && \
     find {{ $beatHome }} -type d -exec chmod 0750 {} \; && \
     find {{ $beatHome }} -type f -exec chmod 0640 {} \; && \
-    chmod 0750 {{ $beatBinary }} && \
+    rm {{ $beatBinary }} && \
+    ln -s {{ $beatHome }}/data/elastic-agent-{{ commit_short }}/elastic-agent {{ $beatBinary }} && \
     chmod 0750 {{ $beatHome }}/data/elastic-agent-*/elastic-agent && \
 {{- if .linux_capabilities }}
     setcap {{ .linux_capabilities }} {{ $beatBinary }} && \
