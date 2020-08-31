@@ -64,6 +64,8 @@ func preRunCheck(flags *globalFlags) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
+		paths.UpdatePaths()
+
 		// reexec if running run
 		if cmd.Use == "run" {
 			pathConfigFile := flags.Config()
