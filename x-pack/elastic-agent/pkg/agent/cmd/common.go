@@ -6,10 +6,14 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 
 	// import logp flags
 	_ "github.com/elastic/beats/v7/libbeat/logp/configure"
@@ -22,7 +26,7 @@ import (
 const (
 	defaultConfig = "elastic-agent.yml"
 	hashLen       = 6
-	commitFile    = ".build_hash.txt"
+	commitFile    = ".elastic-agent.active.commit"
 )
 
 type globalFlags struct {
@@ -79,4 +83,40 @@ func NewCommandWithArgs(args []string, streams *cli.IOStreams) *cobra.Command {
 	cmd.Run = run.Run
 
 	return cmd
+}
+
+func hashedDirName(filecontent []byte) string {
+	s := strings.TrimSpace(string(filecontent))
+	if len(s) == 0 {
+		return "elastic-agent"
+	}
+
+	s = smallHash(s)
+
+	return fmt.Sprintf("elastic-agent-%s", s)
+}
+
+func smallHash(hash string) string {
+	if len(hash) > hashLen {
+		hash = hash[:hashLen]
+	}
+
+	return hash
+}
+
+func generatePaths(dir, origExec string) error {
+	pathsCfg := map[string]interface{}{
+		"path.data":         paths.Data(),
+		"path.home":         dir,
+		"path.config":       paths.Config(),
+		"path.service_name": origExec,
+	}
+
+	pathsCfgPath := filepath.Join(paths.Data(), "paths.yml")
+	pathsContent, err := yaml.Marshal(pathsCfg)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(pathsCfgPath, pathsContent, 0740)
 }

@@ -6,6 +6,7 @@ package paths
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -32,6 +33,11 @@ func init() {
 	getOverrides()
 }
 
+// UpdatePaths update paths based on changes in paths file.
+func UpdatePaths() {
+	getOverrides()
+}
+
 func getOverrides() {
 	type paths struct {
 		HomePath    string `config:"path.home" yaml:"path.home"`
@@ -48,12 +54,19 @@ func getOverrides() {
 		LogsPath:   logsPath,
 	}
 
-	pathsFile := filepath.Join(configPath, "paths.yml")
+	pathsFile := filepath.Join(dataPath, "paths.yml")
+
+	a, _ := filepath.Abs(pathsFile)
+	fmt.Println(">>>>>> reading", a)
 	rawConfig, err := config.LoadYAML(pathsFile)
 	if err == nil {
 		rawConfig.Unpack(defaults)
 	}
+	if err != nil {
+		fmt.Println(">>>ERR: ", err)
+	}
 
+	fmt.Println(">>>>>> defaults", defaults)
 	homePath = defaults.HomePath
 	configPath = defaults.ConfigPath
 	dataPath = defaults.DataPath
