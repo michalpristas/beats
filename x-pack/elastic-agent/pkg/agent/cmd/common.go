@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -118,5 +119,16 @@ func generatePaths(dir, origExec string) error {
 		return err
 	}
 
-	return ioutil.WriteFile(pathsCfgPath, pathsContent, 0740)
+	if err := ioutil.WriteFile(pathsCfgPath, pathsContent, 0740); err != nil {
+		return err
+	}
+
+	if runtime.GOOS == "windows" {
+		// due to two binaries we need to do a path dance
+		// as versioned binary will look for path inside it's own directory
+		versionedPath := filepath.Join(dir, "data", "paths.yml")
+		return os.Symlink(pathsCfgPath, versionedPath)
+	}
+
+	return nil
 }
