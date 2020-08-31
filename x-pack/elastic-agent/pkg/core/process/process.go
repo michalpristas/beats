@@ -37,8 +37,6 @@ func Start(logger *logger.Logger, path string, config *Config, uid, gid int, arg
 		return nil, err
 	}
 
-	fmt.Println(">>>>> RUNNING CMD", cmd)
-
 	// start process
 	if err := cmd.Start(); err != nil {
 		return nil, errors.New(err, fmt.Sprintf("failed to start '%s'", path))

@@ -29,7 +29,6 @@ import (
 func preRunCheck(flags *globalFlags) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if sn := paths.ServiceName(); sn != "" {
-			fmt.Println("!!!!!!!!! service name", paths.ServiceName())
 			// paths were created we're running as child.
 			return nil
 		}

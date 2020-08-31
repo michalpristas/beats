@@ -6,7 +6,6 @@ package paths
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -56,18 +55,12 @@ func getOverrides() {
 	}
 
 	pathsFile := filepath.Join(dataPath, "paths.yml")
-
-	a, _ := filepath.Abs(pathsFile)
-	fmt.Println(">>>>>> reading", a)
 	rawConfig, err := config.LoadYAML(pathsFile)
-	if err == nil {
-		rawConfig.Unpack(defaults)
-	}
 	if err != nil {
-		fmt.Println(">>>ERR: ", err)
+		return
 	}
 
-	fmt.Println(">>>>>> defaults", defaults)
+	rawConfig.Unpack(defaults)
 	homePath = defaults.HomePath
 	configPath = defaults.ConfigPath
 	dataPath = defaults.DataPath

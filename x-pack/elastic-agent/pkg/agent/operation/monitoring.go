@@ -175,7 +175,6 @@ func (o *Operator) generateMonitoringSteps(version string, output interface{}) [
 }
 
 func (o *Operator) getMonitoringFilebeatConfig(output interface{}) (map[string]interface{}, bool) {
-	fmt.Println("monitoring paths home", paths.Home())
 	inputs := []interface{}{
 		map[string]interface{}{
 			"type": "log",
