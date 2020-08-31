@@ -104,15 +104,15 @@ func smallHash(hash string) string {
 	return hash
 }
 
-func generatePaths(dataPath, dir, origExec string) error {
+func generatePaths(dir, origExec string) error {
 	pathsCfg := map[string]interface{}{
-		"path.data":         dataPath,
+		"path.data":         paths.Data(),
 		"path.home":         dir,
 		"path.config":       paths.Config(),
 		"path.service_name": origExec,
 	}
 
-	pathsCfgPath := filepath.Join(dataPath, "paths.yml")
+	pathsCfgPath := filepath.Join(paths.Data(), "paths.yml")
 	pathsContent, err := yaml.Marshal(pathsCfg)
 	if err != nil {
 		return err
