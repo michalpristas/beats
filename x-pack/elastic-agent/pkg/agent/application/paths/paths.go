@@ -6,6 +6,7 @@ package paths
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -57,6 +58,7 @@ func getOverrides() {
 	pathsFile := filepath.Join(dataPath, "paths.yml")
 	rawConfig, err := config.LoadYAML(pathsFile)
 	if err != nil {
+		fmt.Println(">>>>> ", err)
 		return
 	}
 
