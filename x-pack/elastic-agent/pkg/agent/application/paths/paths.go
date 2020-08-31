@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/config"
 )
@@ -22,9 +23,7 @@ var (
 )
 
 func init() {
-	// is evaluated and point to versioned dir
-	exePath := retrieveExecutablePath()
-	initialHome := filepath.Dir(filepath.Dir(exePath)) // is two level up the executable
+	initialHome := initialHome()
 
 	fs := flag.CommandLine
 	fs.StringVar(&homePath, "path.home", initialHome, "Agent root path")
@@ -114,4 +113,13 @@ func retrieveExecutablePath() string {
 	}
 
 	return filepath.Dir(evalPath)
+}
+
+func initialHome() string {
+	exePath := retrieveExecutablePath()
+	if runtime.GOOS == "windows" {
+		return exePath
+	}
+
+	return filepath.Dir(filepath.Dir(exePath)) // is two level up the executable (symlink evaluated)
 }
