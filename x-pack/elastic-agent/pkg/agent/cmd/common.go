@@ -127,6 +127,9 @@ func generatePaths(dir, origExec string) error {
 		// due to two binaries we need to do a path dance
 		// as versioned binary will look for path inside it's own directory
 		versionedPath := filepath.Join(dir, "data", "paths.yml")
+		if err := os.MkdirAll(filepath.Dir(versionedPath), 0700); err != nil {
+			return err
+		}
 		return os.Symlink(pathsCfgPath, versionedPath)
 	}
 
