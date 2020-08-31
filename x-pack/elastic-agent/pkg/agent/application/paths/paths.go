@@ -22,13 +22,15 @@ var (
 )
 
 func init() {
+	// is evaluated and point to versioned dir
 	exePath := retrieveExecutablePath()
+	initialHome := filepath.Dir(filepath.Dir(exePath)) // is two level up the executable
 
 	fs := flag.CommandLine
-	fs.StringVar(&homePath, "path.home", exePath, "Agent root path")
-	fs.StringVar(&configPath, "path.config", exePath, "Config path is the directory Agent looks for its config file")
-	fs.StringVar(&dataPath, "path.data", filepath.Join(exePath, "data"), "Data path contains Agent managed binaries")
-	fs.StringVar(&logsPath, "path.logs", exePath, "Logs path contains Agent log output")
+	fs.StringVar(&homePath, "path.home", initialHome, "Agent root path")
+	fs.StringVar(&configPath, "path.config", initialHome, "Config path is the directory Agent looks for its config file")
+	fs.StringVar(&dataPath, "path.data", filepath.Join(initialHome, "data"), "Data path contains Agent managed binaries")
+	fs.StringVar(&logsPath, "path.logs", initialHome, "Logs path contains Agent log output")
 
 	getOverrides()
 }
@@ -106,5 +108,10 @@ func retrieveExecutablePath() string {
 		panic(err)
 	}
 
-	return filepath.Dir(execPath)
+	evalPath, err := filepath.EvalSymlinks(execPath)
+	if err != nil {
+		panic(err)
+	}
+
+	return filepath.Dir(evalPath)
 }

@@ -53,8 +53,6 @@ func preRunCheck(flags *globalFlags) func(cmd *cobra.Command, args []string) err
 		}
 
 		paths.UpdatePaths()
-
-		fmt.Println("!2!!2!!!!2!! service name", paths.ServiceName())
 		return nil
 	}
 }

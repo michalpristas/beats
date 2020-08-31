@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact"
 )
@@ -20,7 +21,7 @@ const (
 )
 
 var (
-	defaultDropSubdir = filepath.Join("data", "downloads")
+	defaultDropSubdir = filepath.Join(paths.Home(), "downloads")
 )
 
 // Downloader is a downloader able to fetch artifacts from elastic.co web page.
