@@ -57,7 +57,7 @@ func RunningInstalled() bool {
 	execDir := filepath.Dir(execPath)
 	if insideData(execDir) {
 
-		ioutil.WriteFile(filepath.Join(paths.Top(), "unning.installed.inside.path"), []byte(fmt.Sprintln(">>> inside path", execPath, execDir)), 0666)
+		ioutil.WriteFile(filepath.Join(paths.Top(), "running.installed.inside.path"), []byte(fmt.Sprintln(">>> inside path", execPath, execDir)), 0666)
 		// executable path is being reported as being down inside of data path
 		// move up to directories to perform the comparison
 		execDir = filepath.Dir(filepath.Dir(execDir))
