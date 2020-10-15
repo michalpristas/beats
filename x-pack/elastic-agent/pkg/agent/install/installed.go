@@ -6,9 +6,11 @@ package install
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/kardianos/service"
 )
 
@@ -54,13 +56,14 @@ func RunningInstalled() bool {
 	execName := filepath.Base(execPath)
 	execDir := filepath.Dir(execPath)
 	if insideData(execDir) {
-		fmt.Println(">>> inside path", execPath, execDir)
+
+		ioutil.WriteFile(filepath.Join(paths.Top(), "unning.installed.inside.path"), []byte(fmt.Sprintln(">>> inside path", execPath, execDir)), 0666)
 		// executable path is being reported as being down inside of data path
 		// move up to directories to perform the comparison
 		execDir = filepath.Dir(filepath.Dir(execDir))
 		execPath = filepath.Join(execDir, execName)
 	}
-	fmt.Println(">>>", expected, execPath, execDir, execName)
+	ioutil.WriteFile(filepath.Join(paths.Top(), "running.installed.out"), []byte(fmt.Sprintln(">>>", expected, execPath, execDir, execName)), 0666)
 	return expected == execPath
 }
 

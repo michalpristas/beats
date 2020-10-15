@@ -13,6 +13,7 @@ import (
 
 	"github.com/otiai10/copy"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/release"
 )
@@ -138,6 +139,7 @@ func verifyDirectory(dir string) error {
 // insideData returns true when the exePath is inside of the current Agents data path.
 func insideData(exePath string) bool {
 	expectedPath := filepath.Join("data", fmt.Sprintf("elastic-agent-%s", release.ShortCommit()))
-	fmt.Println(">>> has suffix?", exePath, expectedPath, strings.HasSuffix(exePath, expectedPath))
+
+	ioutil.WriteFile(filepath.Join(paths.Top(), "has.suffix.out"), []byte(fmt.Sprintln(">>> has suffix?", exePath, expectedPath, strings.HasSuffix(exePath, expectedPath))), 0666)
 	return strings.HasSuffix(exePath, expectedPath)
 }

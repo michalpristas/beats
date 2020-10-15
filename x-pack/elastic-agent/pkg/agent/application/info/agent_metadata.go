@@ -6,10 +6,13 @@ package info
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/install"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/release"
 	"github.com/elastic/go-sysinfo"
@@ -129,7 +132,8 @@ func (i *AgentInfo) ECSMetadata() (*ECSMeta, error) {
 	}
 
 	info := sysInfo.Info()
-	fmt.Println(">>> meta", release.Upgradeable(), install.RunningInstalled(), install.RunningUnderSupervisor())
+
+	ioutil.WriteFile(filepath.Join(paths.Top(), "meta.out"), []byte(fmt.Sprintln(">>> meta", release.Upgradeable(), install.RunningInstalled(), install.RunningUnderSupervisor())), 0666)
 	return &ECSMeta{
 		Elastic: &ElasticECSMeta{
 			Agent: &AgentECSMeta{
