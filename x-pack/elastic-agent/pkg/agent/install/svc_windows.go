@@ -7,34 +7,55 @@
 package install
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"golang.org/x/sys/windows"
 )
 
 // RunningUnderSupervisor returns true when executing Agent is running under
 // the supervisor processes of the OS.
 func RunningUnderSupervisor() bool {
+	f, _ := os.OpenFile(filepath.Join(paths.Top(), "running.under.supervisor"), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	fmt.Fprintln(f, ">>> started")
+	defer func() {
+		fmt.Fprintln(f, "<<< stopped")
+		f.Close()
+	}()
+
 	serviceSid, err := allocSid(windows.SECURITY_SERVICE_RID)
+	fmt.Fprintln(f, "allocsid", serviceSid, err)
 	if err != nil {
+		fmt.Fprintln(f, "allocSid return false")
 		return false
 	}
 	defer windows.FreeSid(serviceSid)
 
 	t, err := windows.OpenCurrentProcessToken()
+	fmt.Fprintln(f, "OpenCurrentProcessToken", t, err)
 	if err != nil {
+		fmt.Fprintln(f, "OpenCurrentProcessToken return false")
 		return false
 	}
 	defer t.Close()
 
 	gs, err := t.GetTokenGroups()
+	fmt.Fprintln(f, "GetTokenGroups", gs, err)
 	if err != nil {
+		fmt.Fprintln(f, "GetTokenGroups return false")
 		return false
 	}
 
 	for _, g := range gs.AllGroups() {
+		fmt.Fprintln(f, "checking group", g.Sid, serviceSid)
 		if windows.EqualSid(g.Sid, serviceSid) {
+			fmt.Fprintln(f, "EqualSid returns true")
 			return true
 		}
 	}
+	fmt.Fprintln(f, "everything failed")
 	return false
 }
 
