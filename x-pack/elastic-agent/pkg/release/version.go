@@ -5,11 +5,13 @@
 package release
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	libbeatVersion "github.com/elastic/beats/v7/libbeat/version"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/install"
 )
 
 const (
@@ -29,7 +31,7 @@ var allowUpgrade string
 
 // Commit returns the current build hash or unknown if it was not injected in the build process.
 func Commit() string {
-	return libbeatVersion.Commit()
+	return fmt.Sprintf("%v, %v, %v, %v", libbeatVersion.Commit(), release.Upgradeable(), install.RunningInstalled(), install.RunningUnderSupervisor())
 }
 
 // ShortCommit returns commit up to 6 characters.
