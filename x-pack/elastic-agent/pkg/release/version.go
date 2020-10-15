@@ -29,12 +29,12 @@ var allowUpgrade string
 
 // Commit returns the current build hash or unknown if it was not injected in the build process.
 func Commit() string {
-	return "a3a71d" //libbeatVersion.Commit()
+	return "1ed997" //libbeatVersion.Commit()
 }
 
 // ShortCommit returns commit up to 6 characters.
 func ShortCommit() string {
-	return "a3a71d"
+	return "1ed997"
 	hash := Commit()
 	if len(hash) > hashLen {
 		hash = hash[:hashLen]
