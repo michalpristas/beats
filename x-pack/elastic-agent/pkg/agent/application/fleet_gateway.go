@@ -6,6 +6,8 @@ package application
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -204,6 +206,9 @@ func (f *fleetGateway) execute(ctx context.Context) (*fleetapi.CheckinResponse, 
 		Events:   ee,
 		Metadata: ecsMeta,
 	}
+
+	out, _ := json.Marshal(req)
+	fmt.Println("checking: ", string(out))
 
 	resp, err := cmd.Execute(ctx, req)
 	if isUnauth(err) {
