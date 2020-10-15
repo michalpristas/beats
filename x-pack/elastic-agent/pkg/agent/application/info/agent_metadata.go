@@ -129,7 +129,7 @@ func (i *AgentInfo) ECSMetadata() (*ECSMeta, error) {
 	}
 
 	info := sysInfo.Info()
-
+	fmt.Println(">>> meta", release.Upgradeable(), install.RunningInstalled(), install.RunningUnderSupervisor())
 	return &ECSMeta{
 		Elastic: &ElasticECSMeta{
 			Agent: &AgentECSMeta{
