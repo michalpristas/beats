@@ -138,5 +138,6 @@ func verifyDirectory(dir string) error {
 // insideData returns true when the exePath is inside of the current Agents data path.
 func insideData(exePath string) bool {
 	expectedPath := filepath.Join("data", fmt.Sprintf("elastic-agent-%s", release.ShortCommit()))
+	fmt.Println(">>> has suffix?", exePath, expectedPath, strings.HasSuffix(exePath, expectedPath))
 	return strings.HasSuffix(exePath, expectedPath)
 }
