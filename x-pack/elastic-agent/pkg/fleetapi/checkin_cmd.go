@@ -112,6 +112,9 @@ func (e *CheckinCmd) Execute(ctx context.Context, r *CheckinRequest) (*CheckinRe
 			errors.M(errors.MetaKeyURI, cp))
 	}
 
+	b, _ := json.Marshall(checkinResponse)
+	fmt.Println(">>>", string(b))
+
 	if err := checkinResponse.Validate(); err != nil {
 		return nil, err
 	}
