@@ -23,6 +23,7 @@ const (
 
 type serviceHandler interface {
 	PID(ctx context.Context) (int, error)
+	Name() string
 	Close()
 }
 
@@ -33,6 +34,7 @@ type CrashChecker struct {
 	log         *logger.Logger
 	sc          serviceHandler
 	checkPeriod time.Duration
+	SC          serviceHandler
 }
 
 // NewCrashChecker creates a new crash checker.
@@ -52,6 +54,10 @@ func NewCrashChecker(ctx context.Context, ch chan error, log *logger.Logger) (*C
 	if err := c.Init(ctx); err != nil {
 		return nil, err
 	}
+
+	c.SC = c.sc
+
+	log.Debugf("running checks using '%s' controller", c.sc.Name())
 
 	return c, nil
 }
