@@ -8,7 +8,6 @@
 package upgrade
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -125,30 +124,23 @@ func (p *sysvPidProvider) PID(ctx context.Context) (int, error) {
 	}
 
 	// find line
-	pidLine := ""
-	reader := bufio.NewReader(bytes.NewReader(out))
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, agentName+` (pid `) {
-			pidLine = strings.TrimSpace(line)
-			break
-		}
-	}
-
-	if pidLine == "" {
+	statusLine := strings.TrimSpace(string(out))
+	if statusLine == "" {
 		return 0, errors.New(fmt.Sprintf("service process not found for service '%v'", install.ServiceName))
 	}
 
-	re := regexp.MustCompile(agentName + ` (pid  ([0-9]+)) is running...`)
-	matches := re.FindStringSubmatch(pidLine)
-	if len(matches) != 2 {
-		return 0, errors.New("could not detect pid of process", pidLine, matches)
+	if !strings.HasPrefix(statusLine, "Running") {
+		return 0, errors.New(fmt.Sprintf("'%v' is not running", install.ServiceName))
 	}
 
-	pid, err := strconv.Atoi(matches[1])
+	pidofLine, err := exec.Command("pidof", filepath.Join(install.InstallPath, install.BinaryName)).Output()
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("failed to get process id[%v]", matches[1]), err)
+		return 0, errors.New(fmt.Sprintf("PID not found for'%v': %v", install.ServiceName, err))
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidofLine)))
+	if err != nil {
+		return 0, errors.New("PID not a number")
 	}
 
 	return pid, nil
