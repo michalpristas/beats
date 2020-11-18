@@ -51,7 +51,7 @@ func (ch *CrashChecker) Init(ctx context.Context) error {
 	return nil
 }
 
-func relevantPidProvider() (pidProvider, error) {
+func relevantPidProvider() pidProvider {
 	var pp pidProvider
 
 	switch {
@@ -198,7 +198,7 @@ func (p *noopPidProvider) Init() error { return nil }
 
 func (p *noopPidProvider) Close() {}
 
-func (p *dbusPidProvider) Name() string { return "noop" }
+func (p *noopPidProvider) Name() string { return "noop" }
 
 func (p *noopPidProvider) PID(ctx context.Context) (int, error) { return 0, nil }
 
@@ -285,5 +285,9 @@ func isSysv() bool {
 		return false
 	}
 
-	return initFile.Mode()&os.ModeSymlink != os.ModeSymlink
+	fi, err := initFile.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeSymlink != os.ModeSymlink
 }
