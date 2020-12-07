@@ -106,6 +106,36 @@ func TestParseURL(t *testing.T) {
 		}
 	})
 
+	t.Run("http+npipe at root without pipe with leading slash", func(t *testing.T) {
+		rawURL := "http+npipe:///custom"
+		hostData, err := ParseURL(rawURL, "http", "", "", "", "")
+		if assert.NoError(t, err) {
+			transport, ok := hostData.Transport.(*dialer.NpipeDialerBuilder)
+			assert.True(t, ok)
+			assert.Equal(t, `\\.\pipe\custom`, transport.Path)
+			assert.Equal(t, "http://npipe", hostData.URI)
+			assert.Equal(t, "http://npipe", hostData.SanitizedURI)
+			assert.Equal(t, "npipe", hostData.Host)
+			assert.Equal(t, "", hostData.User)
+			assert.Equal(t, "", hostData.Password)
+		}
+	})
+
+	t.Run("http+npipe at root without pipe", func(t *testing.T) {
+		rawURL := "http+npipe://custom"
+		hostData, err := ParseURL(rawURL, "http", "", "", "", "")
+		if assert.NoError(t, err) {
+			transport, ok := hostData.Transport.(*dialer.NpipeDialerBuilder)
+			assert.True(t, ok)
+			assert.Equal(t, `\\.\pipe\custom`, transport.Path)
+			assert.Equal(t, "http://npipe", hostData.URI)
+			assert.Equal(t, "http://npipe", hostData.SanitizedURI)
+			assert.Equal(t, "npipe", hostData.Host)
+			assert.Equal(t, "", hostData.User)
+			assert.Equal(t, "", hostData.Password)
+		}
+	})
+
 	t.Run("http+npipe with path", func(t *testing.T) {
 		rawURL := "http+npipe://./pipe/custom"
 		hostData, err := ParseURL(rawURL, "http", "", "", "apath", "")
