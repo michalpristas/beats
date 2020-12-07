@@ -38,7 +38,7 @@ func makeListener(cfg Config) (net.Listener, error) {
 		pipe := npipe.TransformString(cfg.Host)
 		var sd string
 		var err error
-		fmt.Printf(">> SD '%v' len:", cfg.SecurityDescriptor, len(cfg.SecurityDescriptor))
+		fmt.Printf(">> SD '%v' len: %v\n", cfg.SecurityDescriptor, len(cfg.SecurityDescriptor))
 		if len(cfg.SecurityDescriptor) == 0 {
 			sd, err = npipe.DefaultSD(cfg.User)
 			if err != nil {
@@ -47,7 +47,7 @@ func makeListener(cfg Config) (net.Listener, error) {
 		} else {
 			sd = cfg.SecurityDescriptor
 		}
-		fmt.Printf(">> new SD '%v' len:", cfg.SecurityDescriptor, len(cfg.SecurityDescriptor))
+		fmt.Printf(">> new SD '%v' len: %v\n", cfg.SecurityDescriptor, len(cfg.SecurityDescriptor))
 		return npipe.NewListener(pipe, sd)
 	}
 
