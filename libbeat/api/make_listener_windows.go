@@ -47,7 +47,7 @@ func makeListener(cfg Config) (net.Listener, error) {
 		} else {
 			sd = cfg.SecurityDescriptor
 		}
-		fmt.Printf(">> new SD '%v' len: %v\n", sd, len(sd)
+		fmt.Printf(">> new SD '%v' len: %v\n", sd, len(sd))
 		fmt.Printf("creating pipe '%v' from host '%v'\n", pipe, cfg.Host)
 		return npipe.NewListener(pipe, sd)
 	}
