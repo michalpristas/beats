@@ -212,6 +212,10 @@ func getURL(
 		u.Scheme = "http"
 		u.Host = "unix"
 	case "http+npipe":
+		u.Path = ""
+		u.Scheme = "http"
+		u.Host = "npipe"
+
 		p := u.Path
 		if p == "" && u.Host != "" {
 			p = u.Host
@@ -220,12 +224,16 @@ func getURL(
 		p = strings.TrimPrefix(p, `\\.\pipe`)
 		p = strings.TrimPrefix(p, "\\")
 		p = strings.TrimPrefix(p, "/")
-		p = `\\.\pipe\` + strings.Replace(p, "/", "\\", -1)
 
+		segs := strings.SplitAfterN(p, "/", 2)
+		if len(segs) == 2 {
+			p = segs[0]
+			u.Path = segs[1]
+		}
+
+		p = `\\.\pipe\` + strings.Replace(p, "/", "\\", -1)
 		t = dialer.NewNpipeDialerBuilder(p)
-		u.Path = ""
-		u.Scheme = "http"
-		u.Host = "npipe"
+
 	default:
 		t = dialer.NewDefaultDialerBuilder()
 	}
