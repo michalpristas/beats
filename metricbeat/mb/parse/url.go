@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	p "path"
 	"strings"
 
@@ -190,12 +191,12 @@ func SetURLUser(u *url.URL, defaultUser, defaultPass string) {
 func getURL(
 	rawURL, scheme, username, password, path, query string,
 ) (*url.URL, dialer.Builder, error) {
-
+	writeLog(fmt.Sprintf("som volany rawUrl '%s';scheme '%s';username '%s';password '%s';path '%s';query '%s';\n", rawURL, scheme, username, password, path, query))
 	if parts := strings.SplitN(rawURL, "://", 2); len(parts) != 2 {
 		// Add scheme.
 		rawURL = fmt.Sprintf("%s://%s", scheme, rawURL)
 	}
-
+	writeLog(fmt.Sprintf("zmen raw %s\n", rawURL))
 	var t dialer.Builder
 
 	u, err := url.Parse(rawURL)
@@ -203,8 +204,11 @@ func getURL(
 		return nil, t, fmt.Errorf("error parsing URL: %v", err)
 	}
 
+	writeLog(fmt.Sprintf("parsovana URI %#v\n", u))
+
 	// discover the transport to use to communicate with the host if we have a combined scheme.
 	// possible values are mb.TransportTCP, mb.transportUnix or mb.TransportNpipe.
+	writeLog(fmt.Sprintf("chema: %#v\n", u.Scheme))
 	switch u.Scheme {
 	case "http+unix":
 		t = dialer.NewUnixDialerBuilder(u.Path)
@@ -216,14 +220,18 @@ func getURL(
 		u.Scheme = "http"
 		u.Host = "npipe"
 
+		writeLog(fmt.Sprintf("mam u: %#v\n", u))
 		p := u.Path
 		if p == "" && u.Host != "" {
 			p = u.Host
 		}
+		writeLog(fmt.Sprintf("mam p: %#v\n", p))
 		p = strings.TrimPrefix(p, "/pipe")
 		p = strings.TrimPrefix(p, `\\.\pipe`)
 		p = strings.TrimPrefix(p, "\\")
 		p = strings.TrimPrefix(p, "/")
+
+		writeLog(fmt.Sprintf("mam p2: %#v\n", p))
 
 		segs := strings.SplitAfterN(p, "/", 2)
 		if len(segs) == 2 {
@@ -232,6 +240,9 @@ func getURL(
 		}
 
 		p = `\\.\pipe\` + strings.Replace(p, "/", "\\", -1)
+
+		writeLog(fmt.Sprintf("finalne u: %#v\n", u))
+		writeLog(fmt.Sprintf("finalne p: %#v\n", p))
 		t = dialer.NewNpipeDialerBuilder(p)
 
 	default:
@@ -270,6 +281,7 @@ func getURL(
 
 	//Adds the query params in the url
 	u, err = SetQueryParams(u, query)
+	writeLog(fmt.Sprintf("dogabana u: %#v\n", u))
 	return u, t, err
 }
 
@@ -297,4 +309,14 @@ func redactURLCredentials(u *url.URL) *url.URL {
 	redacted := *u
 	redacted.User = nil
 	return &redacted
+}
+
+func writeLog(entry string) {
+	f, err := os.OpenFile(`c:\Users\vagrant\Desktop\testing.txt`, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprint(f, entry)
+	f.Close()
 }
