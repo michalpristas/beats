@@ -64,7 +64,7 @@ func (t *NpipeDialerBuilder) Make(timeout time.Duration) (transport.Dialer, erro
 	to := timeout
 	return transport.DialerFunc(
 		func(_, _ string) (net.Conn, error) {
-			writeLog(fmt.Sprintf("dialujem pajpu %3v\n", strings.TrimSuffix(npipe.TransformString(t.Path), "/")))
+			writeLog(fmt.Sprintf("dialujem pajpu z cety %s %#v\n", t.Path, strings.TrimSuffix(npipe.TransformString(t.Path), "/")))
 			return winio.DialPipe(
 				strings.TrimSuffix(npipe.TransformString(t.Path), "/"),
 				&to,
