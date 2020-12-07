@@ -228,7 +228,7 @@ func getURL(
 		segs := strings.SplitAfterN(p, "/", 2)
 		if len(segs) == 2 {
 			p = strings.TrimSuffix(segs[0], "/")
-			u.Path = segs[1]
+			u.Path = "/" + segs[1]
 		}
 
 		p = `\\.\pipe\` + strings.Replace(p, "/", "\\", -1)
