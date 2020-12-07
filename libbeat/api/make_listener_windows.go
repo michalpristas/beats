@@ -33,10 +33,12 @@ func makeListener(cfg Config) (net.Listener, error) {
 		return nil, errors.New("user and security_descriptor are mutually exclusive, define only one of them")
 	}
 
+	fmt.Println(">>> is npipe", cfg.Host, npipe.IsNPipe(cfg.Host))
 	if npipe.IsNPipe(cfg.Host) {
 		pipe := npipe.TransformString(cfg.Host)
 		var sd string
 		var err error
+		fmt.Println(">> SD", cfg.SecurityDescriptor)
 		if len(cfg.SecurityDescriptor) == 0 {
 			sd, err = npipe.DefaultSD(cfg.User)
 			if err != nil {
@@ -45,6 +47,7 @@ func makeListener(cfg Config) (net.Listener, error) {
 		} else {
 			sd = cfg.SecurityDescriptor
 		}
+		fmt.Println(">> new SD", cfg.SecurityDescriptor)
 		return npipe.NewListener(pipe, sd)
 	}
 
