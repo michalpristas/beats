@@ -25,6 +25,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -44,6 +45,16 @@ type HTTP struct {
 	uri      string
 	method   string
 	body     []byte
+}
+
+func writeLog(entry string) {
+	f, err := os.OpenFile(`c:\Users\vagrant\Desktop\testing.txt`, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprint(f, entry)
+	f.Close()
 }
 
 // NewHTTP creates new http helper
@@ -124,6 +135,7 @@ func (h *HTTP) FetchResponse() (*http.Response, error) {
 		reader = bytes.NewReader(h.body)
 	}
 
+	writeLog(fmt.Sprintf("idem na fetch '%s' '%s'\n", h.method, h.uri))
 	req, err := http.NewRequest(h.method, h.uri, reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create HTTP request")
@@ -133,6 +145,7 @@ func (h *HTTP) FetchResponse() (*http.Response, error) {
 		req.SetBasicAuth(h.hostData.User, h.hostData.Password)
 	}
 
+	writeLog(fmt.Sprintf("idem na fetch req %#v\n", req))
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error making http request: %v", err)
