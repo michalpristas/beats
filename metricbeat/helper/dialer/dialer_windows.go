@@ -20,7 +20,9 @@
 package dialer
 
 import (
+	"fmt"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -62,10 +64,21 @@ func (t *NpipeDialerBuilder) Make(timeout time.Duration) (transport.Dialer, erro
 	to := timeout
 	return transport.DialerFunc(
 		func(_, _ string) (net.Conn, error) {
+			writeLog(fmt.Sprintf("dialujem pajpu %3v\n", strings.TrimSuffix(npipe.TransformString(t.Path), "/")))
 			return winio.DialPipe(
 				strings.TrimSuffix(npipe.TransformString(t.Path), "/"),
 				&to,
 			)
 		},
 	), nil
+}
+
+func writeLog(entry string) {
+	f, err := os.OpenFile(`c:\Users\vagrant\Desktop\testing.txt`, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprint(f, entry)
+	f.Close()
 }
