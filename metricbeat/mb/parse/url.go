@@ -216,12 +216,12 @@ func getURL(
 		u.Scheme = "http"
 		u.Host = "unix"
 	case "http+npipe":
+		p := u.Path
 		u.Path = ""
 		u.Scheme = "http"
 		u.Host = "npipe"
 
 		writeLog(fmt.Sprintf("mam u: %#v\n", u))
-		p := u.Path
 		if p == "" && u.Host != "" {
 			p = u.Host
 		}
