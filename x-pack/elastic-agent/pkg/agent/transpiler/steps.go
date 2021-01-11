@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
 	"gopkg.in/yaml.v2"
 )
 
@@ -248,6 +249,9 @@ func (r *ExecFileStep) Execute(ctx context.Context, rootDir string) error {
 	cmd.Env = nil
 	cmd.Dir = rootDir
 	output, err := cmd.Output()
+	l, _ := logger.New("exec")
+	l.Debugf("running exec %s %s: %#v", rootDir, path, cmd)
+
 	if ctx.Err() == context.DeadlineExceeded {
 		return fmt.Errorf("operation 'Exec' timed out after %d seconds", r.Timeout)
 	}
@@ -256,7 +260,7 @@ func (r *ExecFileStep) Execute(ctx context.Context, rootDir string) error {
 		if ok && exitErr.Stderr != nil && len(exitErr.Stderr) > 0 {
 			return fmt.Errorf("operation 'Exec' failed: %s", string(exitErr.Stderr))
 		}
-		return fmt.Errorf("operation 'Exec' failed: %s", string(output))
+		return fmt.Errorf("operation 'Exec' failed (%v): %s", err, string(output))
 	}
 	return nil
 }
