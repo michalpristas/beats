@@ -171,7 +171,8 @@ func (p *dbusPidProvider) Close() {
 }
 
 func (p *dbusPidProvider) PID(ctx context.Context) (int, error) {
-	prop, err := p.dbusConn.GetServiceProperty(install.ServiceName, "MainPID")
+	sn := strings.TrimSuffix(install.ServiceName, ".service") + ".service"
+	prop, err := p.dbusConn.GetServiceProperty(sn, "MainPID")
 	if err != nil {
 		return 0, errors.New("failed to read service", err)
 	}
