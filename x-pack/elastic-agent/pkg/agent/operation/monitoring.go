@@ -556,7 +556,19 @@ func (o *Operator) getMetricbeatEndpoints() map[string][]string {
 	for _, a := range o.apps {
 		metricEndpoint := a.Monitor().MetricsPathPrefixed(a.Spec(), o.pipelineID)
 		if metricEndpoint != "" {
-			endpoints[strings.ReplaceAll(a.Name(), "-", "_")] = append(endpoints[a.Name()], metricEndpoint)
+			safeName := strings.ReplaceAll(a.Name(), "-", "_")
+			// prevent duplicates
+			var found bool
+			for _, ep := range endpoints[safeName] {
+				if ep == metricEndpoint {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				endpoints[safeName] = append(endpoints[safeName], metricEndpoint)
+			}
 		}
 	}
 
