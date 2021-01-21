@@ -40,7 +40,8 @@ func (o *Operator) handleStartSidecar(s configrequest.Step) (result error) {
 		return nil
 	}
 
-	for _, step := range o.getMonitoringSteps(s) {
+	o.logger.Errorf("KABAN: retrieving monitoring steps")
+	for i, step := range o.getMonitoringSteps(s) {
 		p, cfg, err := getProgramFromStepWithTags(step, o.config.DownloadConfig, monitoringTags())
 		if err != nil {
 			return errors.New(err,
@@ -48,6 +49,8 @@ func (o *Operator) handleStartSidecar(s configrequest.Step) (result error) {
 				errors.M(errors.MetaKeyAppName, step.ProgramSpec.Cmd),
 				"operator.handleStartSidecar failed to create program")
 		}
+
+		o.logger.Errorf("KABAN: step %d: %s", i, s.String())
 
 		// best effort on starting monitoring, if no hosts provided stop and spare resources
 		if step.ID == configrequest.StepRemove {
@@ -532,6 +535,7 @@ func (o *Operator) getLogFilePaths() map[string][]string {
 
 	for _, a := range o.apps {
 		logPath := a.Monitor().LogPath(a.Spec(), o.pipelineID)
+		o.logger.Errorf("KABAN: getting loggin path for %s: %s", a.Name(), logPath)
 		if logPath != "" {
 			paths[strings.ReplaceAll(a.Name(), "-", "_")] = []string{
 				logPath,
