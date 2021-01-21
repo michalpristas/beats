@@ -579,7 +579,11 @@ func (as *ApplicationState) UpdateConfig(config string) error {
 	if expected == proto.StateExpected_STOPPING {
 		return ErrApplicationStopping
 	}
+
+	as.srv.logger.Errorf("KABAN: new config came for '%s': %s", as.srvName, config)
+
 	if config == currentCfg {
+		as.srv.logger.Errorf("KABAN: configurations are same")
 		// already at that expected config
 		return nil
 	}
@@ -596,6 +600,8 @@ func (as *ApplicationState) UpdateConfig(config string) error {
 		ConfigStateIdx: idx,
 		Config:         config,
 	}, false)
+
+	as.srv.logger.Errorf("KABAN: configuration sent")
 	return nil
 }
 
