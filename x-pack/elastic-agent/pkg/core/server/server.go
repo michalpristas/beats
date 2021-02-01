@@ -880,6 +880,7 @@ func (s *Server) getCertificate(chi *tls.ClientHelloInfo) (*tls.Certificate, err
 	var cert *tls.Certificate
 	s.apps.Range(func(_ interface{}, val interface{}) bool {
 		sa := val.(*ApplicationState)
+		s.logger.Errorf("PIPI: checking cert match for %s and %s", sa.srvName, chi.ServerName)
 		if sa.srvName == chi.ServerName {
 			cert = sa.cert.Certificate
 			return false
