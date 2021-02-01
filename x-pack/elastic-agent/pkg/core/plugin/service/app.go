@@ -342,25 +342,39 @@ func (a *Application) startCredsListener() error {
 	a.credsWG.Add(1)
 	go func() {
 		for {
+			a.logger.Errorf("PIPI: credlistener waiting for listener")
 			conn, err := lis.Accept()
+			a.logger.Errorf("PIPI: listener connecting")
 			if err != nil {
+				a.logger.Errorf("PIPI: connecting listener failed %v", err)
 				break
 			}
+			a.logger.Errorf("PIPI: credlistener waiting for lock")
 			a.appLock.Lock()
+			a.logger.Errorf("PIPI: credlistener lock acquired")
 			srvState := a.srvState
 			a.appLock.Unlock()
+			a.logger.Errorf("PIPI: credlistener lock released")
+
 			if srvState == nil {
+
+				a.logger.Errorf("PIPI: credlistener app not started")
 				// application stopped
 				_ = conn.Close()
 				continue
 			}
+
+			a.logger.Errorf("PIPI: credlistener writing info")
 			if err := srvState.WriteConnInfo(conn); err != nil {
+				a.logger.Errorf("PIPI: credlistener writing info failed: %v", err)
 				_ = conn.Close()
 				if err != io.EOF {
 					a.logger.Errorf("failed to write connection credentials: %s", err)
 				}
 				continue
 			}
+
+			a.logger.Errorf("PIPI: credlistener writing info done")
 			_ = conn.Close()
 		}
 		a.credsWG.Done()
