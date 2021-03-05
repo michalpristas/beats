@@ -9,10 +9,13 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"gopkg.in/yaml.v2"
 
+	"github.com/elastic/beats/v7/libbeat/common/backoff"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/filelock"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/storage"
@@ -45,6 +48,14 @@ func AgentConfigFile() string {
 	return filepath.Join(paths.Config(), defaultAgentConfigFile)
 }
 
+// AgentConfigFileLock is a locker for agent config file updates.
+func AgentConfigFileLock() *filelock.AppLocker {
+	return filelock.NewAppLocker(
+		paths.Config(),
+		fmt.Sprintf("%s.lock", defaultAgentConfigFile),
+	)
+}
+
 // AgentCapabilitiesPath is a name of file used to store agent capabilities
 func AgentCapabilitiesPath() string {
 	return filepath.Join(paths.Config(), defaultAgentCapabilitiesFile)
@@ -62,7 +73,7 @@ func AgentStateStoreFile() string {
 
 // updateLogLevel updates log level and persists it to disk.
 func updateLogLevel(level string) error {
-	ai, err := loadAgentInfo(false, defaultLogLevel)
+	ai, err := loadAgentInfoWithBackoff(false, defaultLogLevel)
 	if err != nil {
 		return err
 	}
@@ -86,31 +97,6 @@ func generateAgentID() (string, error) {
 	}
 
 	return uid.String(), nil
-}
-
-func loadAgentInfo(forceUpdate bool, logLevel string) (*persistentAgentInfo, error) {
-	agentConfigFile := AgentConfigFile()
-	s := storage.NewDiskStore(agentConfigFile)
-
-	agentinfo, err := getInfoFromStore(s, logLevel)
-	if err != nil {
-		return nil, err
-	}
-
-	if agentinfo != nil && !forceUpdate && agentinfo.ID != "" {
-		return agentinfo, nil
-	}
-
-	agentinfo.ID, err = generateAgentID()
-	if err != nil {
-		return nil, err
-	}
-
-	if err := updateAgentInfo(s, agentinfo); err != nil {
-		return nil, errors.New(err, "storing generated agent id", errors.TypeFilesystem)
-	}
-
-	return agentinfo, nil
 }
 
 func getInfoFromStore(s ioStore, logLevel string) (*persistentAgentInfo, error) {
@@ -178,6 +164,19 @@ func updateAgentInfo(s ioStore, agentInfo *persistentAgentInfo) error {
 		return errors.New(err, "failed to unpack stored config to map")
 	}
 
+	// best effort to keep the ID
+	if agentInfoSubMap, found := configMap[agentInfoKey]; found {
+		if cc, err := config.NewConfigFrom(agentInfoSubMap); err == nil {
+			pid := &persistentAgentInfo{}
+			err := cc.Unpack(&pid)
+			if err == nil && pid.ID != agentInfo.ID {
+				// if our id is different (we just generated it)
+				// keep the one present in the file
+				agentInfo.ID = pid.ID
+			}
+		}
+	}
+
 	configMap[agentInfoKey] = agentInfo
 
 	r, err := yamlToReader(configMap)
@@ -194,4 +193,58 @@ func yamlToReader(in interface{}) (io.Reader, error) {
 		return nil, errors.New(err, "could not marshal to YAML")
 	}
 	return bytes.NewReader(data), nil
+}
+
+func loadAgentInfoWithBackoff(forceUpdate bool, logLevel string) (*persistentAgentInfo, error) {
+	ai, err := loadAgentInfo(forceUpdate, logLevel)
+	signal := make(chan struct{})
+	backExp := backoff.NewExpBackoff(signal, 200*time.Millisecond, 5*time.Second)
+
+	for err != nil {
+		backExp.Wait()
+		ai, err = loadAgentInfo(forceUpdate, logLevel)
+	}
+
+	close(signal)
+	return ai, err
+}
+
+func loadAgentInfo(forceUpdate bool, logLevel string) (*persistentAgentInfo, error) {
+	idLock := AgentConfigFileLock()
+	if err := idLock.TryLock(); err != nil {
+		return nil, err
+	}
+	defer idLock.Unlock()
+
+	agentConfigFile := AgentConfigFile()
+	s := storage.NewDiskStore(agentConfigFile)
+
+	agentinfo, err := getInfoFromStore(s, logLevel)
+	if err != nil {
+		return nil, err
+	}
+
+	if agentinfo != nil && !forceUpdate && agentinfo.ID != "" {
+		return agentinfo, nil
+	}
+
+	if err := updateID(agentinfo, s); err != nil {
+		return nil, err
+	}
+
+	return agentinfo, nil
+}
+
+func updateID(agentInfo *persistentAgentInfo, s ioStore) error {
+	var err error
+	agentInfo.ID, err = generateAgentID()
+	if err != nil {
+		return err
+	}
+
+	if err := updateAgentInfo(s, agentInfo); err != nil {
+		return errors.New(err, "storing generated agent id", errors.TypeFilesystem)
+	}
+
+	return nil
 }
