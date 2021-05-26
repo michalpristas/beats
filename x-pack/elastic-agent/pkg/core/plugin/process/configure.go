@@ -41,6 +41,8 @@ func (a *Application) Configure(ctx context.Context, config map[string]interface
 
 	isRestartNeeded := plugin.IsRestartNeeded(a.logger, a.Spec(), a.srvState, config)
 
+	a.logger.Debugf(">>> sending config to %s: %v", a.id, string(cfgStr))
+
 	err = a.srvState.UpdateConfig(string(cfgStr))
 	if err != nil {
 		return errors.New(err, errors.TypeApplication)
