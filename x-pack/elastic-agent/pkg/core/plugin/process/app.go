@@ -142,8 +142,13 @@ func (a *Application) Stop() {
 	a.appLock.Lock()
 	status := a.state.Status
 	srvState := a.srvState
+
 	// close watcher so it does not nullify process info
-	close(a.closeWatcherChan)
+	if a.closeWatcherChan != nil {
+		close(a.closeWatcherChan)
+		a.closeWatcherChan = nil
+	}
+
 	a.appLock.Unlock()
 
 	if status == state.Stopped {
