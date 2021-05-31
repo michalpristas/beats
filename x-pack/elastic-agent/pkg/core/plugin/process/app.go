@@ -214,6 +214,12 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 			a.appLock.Unlock()
 			return
 		}
+
+		// was already stopped by Stop
+		if a.state.Status == state.Stopped {
+			return
+		}
+
 		a.state.ProcessInfo = nil
 		srvState := a.srvState
 
