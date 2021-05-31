@@ -61,6 +61,7 @@ type Application struct {
 	appLock          sync.Mutex
 	restartCanceller context.CancelFunc
 	restartConfig    map[string]interface{}
+	closeWatcherChan chan bool
 }
 
 // ArgsDecorator decorates arguments before calling an application
@@ -100,11 +101,12 @@ func NewApplication(
 		state: state.State{
 			Status: state.Stopped,
 		},
-		reporter:       reporter,
-		monitor:        monitor,
-		uid:            uid,
-		gid:            gid,
-		statusReporter: statusController.RegisterApp(id, appName),
+		reporter:         reporter,
+		monitor:          monitor,
+		uid:              uid,
+		gid:              gid,
+		statusReporter:   statusController.RegisterApp(id, appName),
+		closeWatcherChan: make(chan bool),
 	}, nil
 }
 
@@ -140,6 +142,8 @@ func (a *Application) Stop() {
 	a.appLock.Lock()
 	status := a.state.Status
 	srvState := a.srvState
+	// close watcher so it does not nullify process info
+	close(a.closeWatcherChan)
 	a.appLock.Unlock()
 
 	if status == state.Stopped {
@@ -189,6 +193,9 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 		var procState *os.ProcessState
 
 		select {
+		case <-a.closeWatcherChan:
+			// closing from stop, no action
+			return
 		case ps := <-a.waitProc(proc.Process):
 			procState = ps
 		case <-a.bgContext.Done():

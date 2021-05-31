@@ -10,9 +10,12 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/elastic/elastic-agent-client/v7/pkg/client"
 	"github.com/elastic/elastic-agent-client/v7/pkg/proto"
@@ -22,6 +25,7 @@ import (
 	"github.com/elastic/beats/v7/libbeat/common/reload"
 	"github.com/elastic/beats/v7/libbeat/logp"
 	"github.com/elastic/beats/v7/libbeat/management"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/tokenbucket"
 	"github.com/elastic/beats/v7/x-pack/libbeat/management/api"
 
 	xmanagement "github.com/elastic/beats/v7/x-pack/libbeat/management"
@@ -41,7 +45,8 @@ type Manager struct {
 	msg       string
 	payload   map[string]interface{}
 
-	stopFunc func()
+	stopFunc              func()
+	unavailableFailSwitch *tokenbucket.Bucket
 }
 
 // NewFleetManager returns a X-Pack Beats Fleet Management manager.
@@ -59,14 +64,20 @@ func NewFleetManager(config *common.Config, registry *reload.Registry, beatUUID 
 func NewFleetManagerWithConfig(c *Config, registry *reload.Registry, beatUUID uuid.UUID) (management.Manager, error) {
 	log := logp.NewLogger(management.DebugK)
 
-	m := &Manager{
-		config:   c,
-		logger:   log.Named("fleet"),
-		beatUUID: beatUUID,
-		registry: registry,
+	// 5 failures in 1 second is fatal
+	tb, err := tokenbucket.NewTokenBucket(context.Background(), 5, 1, 1*time.Second)
+	if err != nil {
+		return nil, err
 	}
 
-	var err error
+	m := &Manager{
+		config:                c,
+		logger:                log.Named("fleet"),
+		beatUUID:              beatUUID,
+		registry:              registry,
+		unavailableFailSwitch: tb,
+	}
+
 	var blacklist *xmanagement.ConfigBlacklist
 	var eac client.Client
 	if c.Enabled && c.Mode == xmanagement.ModeFleet {
@@ -200,6 +211,11 @@ func (cm *Manager) OnStop() {
 
 func (cm *Manager) OnError(err error) {
 	cm.logger.Errorf("elastic-agent-client got error: %s", err)
+	if errStatus := status.Code(err); errStatus == codes.Unavailable && !cm.unavailableFailSwitch.TryAdd() {
+		// in case 5 failures occured within a second, let's panic. process will be restarted by agent.
+		panic(err)
+	}
+
 }
 
 func (cm *Manager) apply(blocks api.ConfigBlocks) xmanagement.Errors {

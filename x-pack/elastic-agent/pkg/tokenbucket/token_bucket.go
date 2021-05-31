@@ -58,6 +58,16 @@ func (b *Bucket) Add() {
 	b.rateChan <- struct{}{}
 }
 
+// TryAdd tries adding item into bucket returns `false` when immediate add is not possible.
+func (b *Bucket) TryAdd() bool {
+	select {
+	case b.rateChan <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+
 // Close stops the rate limiting and does not let pass anything anymore.
 func (b *Bucket) Close() {
 	close(b.closeChan)
