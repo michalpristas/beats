@@ -132,8 +132,6 @@ func (a *Application) Name() string {
 
 // Started returns true if the application is started.
 func (a *Application) Started() bool {
-	started := a.state.Status != state.Stopped && a.state.Status != state.Crashed && a.state.Status != state.Failed
-	a.logger.Errorf(">> application %s is %v started has a state of %s", a.id, started, a.state.Status)
 	return a.state.Status != state.Stopped && a.state.Status != state.Crashed && a.state.Status != state.Failed
 }
 
@@ -161,7 +159,6 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		select {
 		case ps := <-a.waitProc(proc.Process):
-			a.logger.Errorf(">> %s: process exited and wait detected", a.id)
 			procState = ps
 		case <-a.bgContext.Done():
 			return
@@ -169,11 +166,6 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		a.appLock.Lock()
 		if a.state.ProcessInfo != proc {
-			if a.state.ProcessInfo == nil {
-				a.logger.Errorf(">> %s: process info is different 'nil' vs %s", a.id, proc.PID)
-			} else {
-				a.logger.Errorf(">> %s: process info is different %s vs %s", a.id, a.state.ProcessInfo.PID, proc.PID)
-			}
 			// already another process started, another watcher is watching instead
 			a.appLock.Unlock()
 			return
@@ -181,26 +173,21 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		// was already stopped by Stop, do not restart
 		if a.state.Status == state.Stopped {
-			a.logger.Errorf(">> %s: already stopped", a.id)
 			return
 		}
 
 		a.state.ProcessInfo = nil
-		a.logger.Errorf(">> %s: process info nilled", a.id)
 		srvState := a.srvState
 
 		if srvState == nil || srvState.Expected() == proto.StateExpected_STOPPING {
-			a.logger.Errorf(">> %s: stoppeding quitting %v, %v", a.id, srvState.Expected().String(), srvState)
 			a.appLock.Unlock()
 			return
 		}
 
 		msg := fmt.Sprintf("exited with code: %d", procState.ExitCode())
-		a.logger.Errorf(">> %s: proccess crash detected", a.id)
 		a.setState(state.Restarting, msg, nil)
 
 		// it was a crash
-		a.logger.Errorf(">> %s: starting app again", a.id)
 		a.start(ctx, p, cfg)
 		a.appLock.Unlock()
 	}()
@@ -239,8 +226,6 @@ func (a *Application) cleanUp() {
 }
 
 func (a *Application) stopWithMark(initiatedIn string) {
-	a.logger.Errorf(">> %s: started stop from %s", a.id, initiatedIn)
-	defer a.logger.Errorf(">> %s: finished stop from %s", a.id, initiatedIn)
 	a.appLock.Lock()
 	status := a.state.Status
 	srvState := a.srvState
@@ -252,9 +237,7 @@ func (a *Application) stopWithMark(initiatedIn string) {
 
 	stopSig := os.Interrupt
 	if srvState != nil {
-		a.logger.Errorf(">> %s: srv state nil from %s", a.id, initiatedIn)
 		if err := srvState.Stop(a.processConfig.StopTimeout); err != nil {
-			a.logger.Errorf(">> %s: stop from %s finished with an error %v", a.id, initiatedIn, err)
 			// kill the process if stop through GRPC doesn't work
 			stopSig = os.Kill
 		}
@@ -265,24 +248,14 @@ func (a *Application) stopWithMark(initiatedIn string) {
 
 	a.srvState = nil
 	if a.state.ProcessInfo != nil {
-		a.logger.Errorf(">> %s: process info not nil from %s", a.id, initiatedIn)
 		if err := a.state.ProcessInfo.Process.Signal(stopSig); err == nil {
-			a.logger.Errorf(">> %s: signaling stop from %s done, witing", a.id, initiatedIn)
 			// no error on signal, so wait for it to stop
 			_, _ = a.state.ProcessInfo.Process.Wait()
-			a.logger.Errorf(">> %s: waiting from %s done", a.id, initiatedIn)
-		} else {
-
-			a.logger.Errorf(">> %s: signaling stop from %s failed %v", a.id, initiatedIn, err)
 		}
 		a.state.ProcessInfo = nil
 
 		// cleanup drops
 		a.cleanUp()
-	} else {
-		a.logger.Errorf(">> %s: process info nil from %s", a.id, initiatedIn)
 	}
 	a.setState(state.Stopped, "Stopped", nil)
-
-	a.logger.Errorf(">> %s: state set to stopped stop from %s", a.id, initiatedIn)
 }
