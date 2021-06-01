@@ -132,6 +132,8 @@ func (a *Application) Name() string {
 
 // Started returns true if the application is started.
 func (a *Application) Started() bool {
+	started := a.state.Status != state.Stopped && a.state.Status != state.Crashed && a.state.Status != state.Failed
+	a.logger.Errorf(">> application %s is %v started has a state of %s", a.id, started, a.state.Status)
 	return a.state.Status != state.Stopped && a.state.Status != state.Crashed && a.state.Status != state.Failed
 }
 
