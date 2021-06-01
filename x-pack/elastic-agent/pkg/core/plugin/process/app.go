@@ -162,8 +162,6 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 			a.logger.Errorf(">> %s: process exited and wait detected", a.id)
 			procState = ps
 		case <-a.bgContext.Done():
-			a.logger.Errorf(">> %s: bg context done, calling stop", a.id)
-			a.stopWithMark("watcher")
 			return
 		}
 
@@ -252,9 +250,9 @@ func (a *Application) stopWithMark(initiatedIn string) {
 
 	stopSig := os.Interrupt
 	if srvState != nil {
-		defer a.logger.Errorf(">> %s: srv state nil from %s", a.id, initiatedIn)
+		a.logger.Errorf(">> %s: srv state nil from %s", a.id, initiatedIn)
 		if err := srvState.Stop(a.processConfig.StopTimeout); err != nil {
-			defer a.logger.Errorf(">> %s: stop from %s finished with an error %v", a.id, initiatedIn, err)
+			a.logger.Errorf(">> %s: stop from %s finished with an error %v", a.id, initiatedIn, err)
 			// kill the process if stop through GRPC doesn't work
 			stopSig = os.Kill
 		}
@@ -265,24 +263,24 @@ func (a *Application) stopWithMark(initiatedIn string) {
 
 	a.srvState = nil
 	if a.state.ProcessInfo != nil {
-		defer a.logger.Errorf(">> %s: process info not nil from %s", a.id, initiatedIn)
+		a.logger.Errorf(">> %s: process info not nil from %s", a.id, initiatedIn)
 		if err := a.state.ProcessInfo.Process.Signal(stopSig); err == nil {
-			defer a.logger.Errorf(">> %s: signaling stop from %s done, witing", a.id, initiatedIn)
+			a.logger.Errorf(">> %s: signaling stop from %s done, witing", a.id, initiatedIn)
 			// no error on signal, so wait for it to stop
 			_, _ = a.state.ProcessInfo.Process.Wait()
-			defer a.logger.Errorf(">> %s: waiting from %s done", a.id, initiatedIn)
+			a.logger.Errorf(">> %s: waiting from %s done", a.id, initiatedIn)
 		} else {
 
-			defer a.logger.Errorf(">> %s: signaling stop from %s failed %v", a.id, initiatedIn, err)
+			a.logger.Errorf(">> %s: signaling stop from %s failed %v", a.id, initiatedIn, err)
 		}
 		a.state.ProcessInfo = nil
 
 		// cleanup drops
 		a.cleanUp()
 	} else {
-		defer a.logger.Errorf(">> %s: process info nil from %s", a.id, initiatedIn)
+		a.logger.Errorf(">> %s: process info nil from %s", a.id, initiatedIn)
 	}
 	a.setState(state.Stopped, "Stopped", nil)
 
-	defer a.logger.Errorf(">> %s: state set to stopped stop from %s", a.id, initiatedIn)
+	a.logger.Errorf(">> %s: state set to stopped stop from %s", a.id, initiatedIn)
 }
