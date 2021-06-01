@@ -61,7 +61,6 @@ type Application struct {
 	appLock          sync.Mutex
 	restartCanceller context.CancelFunc
 	restartConfig    map[string]interface{}
-	closeWatcherChan chan bool
 }
 
 // ArgsDecorator decorates arguments before calling an application
@@ -101,12 +100,11 @@ func NewApplication(
 		state: state.State{
 			Status: state.Stopped,
 		},
-		reporter:         reporter,
-		monitor:          monitor,
-		uid:              uid,
-		gid:              gid,
-		statusReporter:   statusController.RegisterApp(id, appName),
-		closeWatcherChan: make(chan bool),
+		reporter:       reporter,
+		monitor:        monitor,
+		uid:            uid,
+		gid:            gid,
+		statusReporter: statusController.RegisterApp(id, appName),
 	}, nil
 }
 
@@ -139,51 +137,13 @@ func (a *Application) Started() bool {
 
 // Stop stops the current application.
 func (a *Application) Stop() {
-	a.appLock.Lock()
-	status := a.state.Status
-	srvState := a.srvState
-
-	// close watcher so it does not nullify process info
-	if a.closeWatcherChan != nil {
-		close(a.closeWatcherChan)
-		a.closeWatcherChan = nil
-	}
-
-	a.appLock.Unlock()
-
-	if status == state.Stopped {
-		return
-	}
-
-	stopSig := os.Interrupt
-	if srvState != nil {
-		if err := srvState.Stop(a.processConfig.StopTimeout); err != nil {
-			// kill the process if stop through GRPC doesn't work
-			stopSig = os.Kill
-		}
-	}
-
-	a.appLock.Lock()
-	defer a.appLock.Unlock()
-
-	a.srvState = nil
-	if a.state.ProcessInfo != nil {
-		if err := a.state.ProcessInfo.Process.Signal(stopSig); err == nil {
-			// no error on signal, so wait for it to stop
-			_, _ = a.state.ProcessInfo.Process.Wait()
-		}
-		a.state.ProcessInfo = nil
-
-		// cleanup drops
-		a.cleanUp()
-	}
-	a.setState(state.Stopped, "Stopped", nil)
+	a.stopWithMark("stop")
 }
 
 // Shutdown stops the application (aka. subprocess).
 func (a *Application) Shutdown() {
 	a.logger.Infof("Signaling application to stop because of shutdown: %s", a.id)
-	a.Stop()
+	a.stopWithMark("shutdown")
 }
 
 // SetState sets the status of the application.
@@ -198,13 +158,12 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 		var procState *os.ProcessState
 
 		select {
-		case <-a.closeWatcherChan:
-			// closing from stop, no action
-			return
 		case ps := <-a.waitProc(proc.Process):
+			a.logger.Errorf(">> %s: process exited and wait detected", a.id)
 			procState = ps
 		case <-a.bgContext.Done():
-			a.Stop()
+			a.logger.Errorf(">> %s: bg context done, calling stop", a.id)
+			a.stopWithMark("watcher")
 			return
 		}
 
@@ -215,7 +174,7 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 			return
 		}
 
-		// was already stopped by Stop
+		// was already stopped by Stop, do not restart
 		if a.state.Status == state.Stopped {
 			return
 		}
@@ -267,4 +226,53 @@ func (a *Application) setState(s state.Status, msg string, payload map[string]in
 
 func (a *Application) cleanUp() {
 	a.monitor.Cleanup(a.desc.Spec(), a.pipelineID)
+}
+
+func (a *Application) stopWithMark(initiatedIn string) {
+	a.logger.Errorf(">> %s: started stop from %s", a.id, initiatedIn)
+	defer a.logger.Errorf(">> %s: finished stop from %s", a.id, initiatedIn)
+	a.appLock.Lock()
+	status := a.state.Status
+	srvState := a.srvState
+	a.appLock.Unlock()
+
+	if status == state.Stopped {
+		return
+	}
+
+	stopSig := os.Interrupt
+	if srvState != nil {
+		defer a.logger.Errorf(">> %s: srv state nil from %s", a.id, initiatedIn)
+		if err := srvState.Stop(a.processConfig.StopTimeout); err != nil {
+			defer a.logger.Errorf(">> %s: stop from %s finished with an error %v", a.id, initiatedIn, err)
+			// kill the process if stop through GRPC doesn't work
+			stopSig = os.Kill
+		}
+	}
+
+	a.appLock.Lock()
+	defer a.appLock.Unlock()
+
+	a.srvState = nil
+	if a.state.ProcessInfo != nil {
+		defer a.logger.Errorf(">> %s: process info not nil from %s", a.id, initiatedIn)
+		if err := a.state.ProcessInfo.Process.Signal(stopSig); err == nil {
+			defer a.logger.Errorf(">> %s: signaling stop from %s done, witing", a.id, initiatedIn)
+			// no error on signal, so wait for it to stop
+			_, _ = a.state.ProcessInfo.Process.Wait()
+			defer a.logger.Errorf(">> %s: waiting from %s done", a.id, initiatedIn)
+		} else {
+
+			defer a.logger.Errorf(">> %s: signaling stop from %s failed %v", a.id, initiatedIn, err)
+		}
+		a.state.ProcessInfo = nil
+
+		// cleanup drops
+		a.cleanUp()
+	} else {
+		defer a.logger.Errorf(">> %s: process info nil from %s", a.id, initiatedIn)
+	}
+	a.setState(state.Stopped, "Stopped", nil)
+
+	defer a.logger.Errorf(">> %s: state set to stopped stop from %s", a.id, initiatedIn)
 }
