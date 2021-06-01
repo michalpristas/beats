@@ -197,7 +197,7 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		msg := fmt.Sprintf("exited with code: %d", procState.ExitCode())
 		a.logger.Errorf(">> %s: proccess crash detected", a.id)
-		a.setState(state.Crashed, msg, nil)
+		a.setState(state.Restarting, msg, nil)
 
 		// it was a crash
 		a.logger.Errorf(">> %s: starting app again", a.id)
