@@ -169,6 +169,11 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		a.appLock.Lock()
 		if a.state.ProcessInfo != proc {
+			if a.state.ProcessInfo == nil {
+				a.logger.Errorf(">> %s: process info is different 'nil' vs %s", a.id, proc.PID)
+			} else {
+				a.logger.Errorf(">> %s: process info is different %s vs %s", a.id, a.state.ProcessInfo.PID, proc.PID)
+			}
 			// already another process started, another watcher is watching instead
 			a.appLock.Unlock()
 			return
@@ -176,21 +181,26 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		// was already stopped by Stop, do not restart
 		if a.state.Status == state.Stopped {
+			a.logger.Errorf(">> %s: already stopped", a.id)
 			return
 		}
 
 		a.state.ProcessInfo = nil
+		a.logger.Errorf(">> %s: process info nilled", a.id)
 		srvState := a.srvState
 
 		if srvState == nil || srvState.Expected() == proto.StateExpected_STOPPING {
+			a.logger.Errorf(">> %s: stoppeding quitting %v, %v", a.id, srvState.Expected().String(), srvState)
 			a.appLock.Unlock()
 			return
 		}
 
 		msg := fmt.Sprintf("exited with code: %d", procState.ExitCode())
+		a.logger.Errorf(">> %s: proccess crash detected", a.id)
 		a.setState(state.Crashed, msg, nil)
 
 		// it was a crash
+		a.logger.Errorf(">> %s: starting app again", a.id)
 		a.start(ctx, p, cfg)
 		a.appLock.Unlock()
 	}()
