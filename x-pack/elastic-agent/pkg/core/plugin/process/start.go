@@ -26,11 +26,11 @@ func (a *Application) Start(ctx context.Context, t app.Taggable, cfg map[string]
 	a.appLock.Lock()
 	defer a.appLock.Unlock()
 
-	return a.start(ctx, t, cfg)
+	return a.start(ctx, t, cfg, false)
 }
 
 // Start starts the application without grabbing the lock.
-func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]interface{}) (err error) {
+func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]interface{}, isRestart bool) (err error) {
 	defer func() {
 		if err != nil {
 			// inject App metadata
@@ -38,10 +38,17 @@ func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]
 		}
 	}()
 
+	// starting only if it's not running
+	// or if it is, then only in case it's restart and this call initiates from restart call
 	if a.Started() && a.state.Status != state.Restarting {
 		// already started if not stopped or crashed
 		return nil
 	}
+
+	if a.state.Status == state.Restarting && !isRestart {
+		return nil
+	}
+
 	a.logger.Errorf(">> starting app %v with status %v", a.id, a.state.Status)
 
 	cfgStr, err := yaml.Marshal(cfg)
@@ -67,7 +74,10 @@ func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]
 		a.srvState.SetInputTypes(a.desc.Spec().ActionInputTypes)
 	}
 
-	if a.state.Status != state.Stopped && a.state.Status != state.Restarting {
+	if a.state.Status != state.Stopped {
+		// restarting as it was previously in a different state
+		a.setState(state.Restarting, "Restarting", nil)
+	} else if a.state.Status != state.Restarting {
 		a.setState(state.Starting, "Starting", nil)
 	}
 
@@ -114,12 +124,13 @@ func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]
 	if err != nil {
 		return err
 	}
-
 	// write connect info to stdin
 	go a.writeToStdin(a.srvState, a.state.ProcessInfo.Stdin)
 
+	cancelCtx, cancel := context.WithCancel(ctx)
+	a.watchClosers[a.state.ProcessInfo.PID] = cancel
 	// setup watcher
-	a.watch(ctx, t, a.state.ProcessInfo, cfg)
+	a.watch(cancelCtx, t, a.state.ProcessInfo, cfg)
 
 	return nil
 }

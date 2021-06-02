@@ -95,6 +95,14 @@ func (a *Application) restart() {
 	a.appLock.Lock()
 	defer a.appLock.Unlock()
 
+	// stop the watcher
+	if a.state.ProcessInfo != nil {
+		if closer, ok := a.watchClosers[a.state.ProcessInfo.PID]; ok {
+			closer()
+			delete(a.watchClosers, a.state.ProcessInfo.PID)
+		}
+	}
+
 	// kill the process
 	if a.state.ProcessInfo != nil {
 		_ = a.state.ProcessInfo.Process.Kill()
@@ -104,7 +112,7 @@ func (a *Application) restart() {
 	tag := a.tag
 
 	a.setState(state.Restarting, "", nil)
-	err := a.start(ctx, tag, a.restartConfig)
+	err := a.start(ctx, tag, a.restartConfig, true)
 	if err != nil {
 		a.setState(state.Crashed, fmt.Sprintf("failed to restart: %s", err), nil)
 	}

@@ -47,6 +47,7 @@ type Application struct {
 	tag          app.Taggable
 	state        state.State
 	reporter     state.Reporter
+	watchClosers map[int]context.CancelFunc
 
 	uid int
 	gid int
@@ -105,6 +106,7 @@ func NewApplication(
 		uid:            uid,
 		gid:            gid,
 		statusReporter: statusController.RegisterApp(id, appName),
+		watchClosers:   make(map[int]context.CancelFunc),
 	}, nil
 }
 
@@ -194,6 +196,9 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 			procState = ps
 		case <-a.bgContext.Done():
 			return
+		case <-ctx.Done():
+			// closer called
+			return
 		}
 
 		a.appLock.Lock()
@@ -201,6 +206,11 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 			// already another process started, another watcher is watching instead
 			a.appLock.Unlock()
 			return
+		}
+
+		// stop the watcher
+		if a.state.ProcessInfo != nil {
+			delete(a.watchClosers, a.state.ProcessInfo.PID)
 		}
 
 		// was already stopped by Stop, do not restart
@@ -220,9 +230,7 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 		a.setState(state.Restarting, msg, nil)
 
 		// it was a crash
-		if a.start(ctx, p, cfg) == nil {
-			a.setState(state.Healthy, "", nil)
-		}
+		a.start(ctx, p, cfg, true)
 		a.appLock.Unlock()
 	}()
 }
