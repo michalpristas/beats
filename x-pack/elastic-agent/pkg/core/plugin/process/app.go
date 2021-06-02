@@ -252,7 +252,7 @@ func (a *Application) waitProc(proc *os.Process) <-chan *os.ProcessState {
 }
 
 func (a *Application) setState(s state.Status, msg string, payload map[string]interface{}) {
-	a.logger.Errorf(">> setting state of app %v from %v to %v", a.id, a.state.Status, s)
+	a.logger.Errorf(">> setting state of app %v from %v to %v with message", a.id, a.state.Status, s, msg)
 	if a.state.Status != s || a.state.Message != msg || !reflect.DeepEqual(a.state.Payload, payload) {
 		a.state.Status = s
 		a.state.Message = msg

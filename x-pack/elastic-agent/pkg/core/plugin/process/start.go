@@ -50,7 +50,13 @@ func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]
 	}
 
 	a.logger.Errorf(">> startin app %s from %s with state %v", a.id, from, a.state.Status)
-	defer a.logger.Errorf(">> startin app %s from %s with state %v finished with pid %d", a.id, from, a.state.Status, a.state.ProcessInfo.PID)
+	defer func() {
+		if a.state.ProcessInfo == nil {
+			a.logger.Errorf(">> startin app %s from %s with state %v nil process info", a.id, from, a.state.Status)
+		} else {
+			a.logger.Errorf(">> startin app %s from %s with state %v finished with pid %d", a.id, from, a.state.Status, a.state.ProcessInfo.PID)
+		}
+	}()
 
 	cfgStr, err := yaml.Marshal(cfg)
 	if err != nil {
