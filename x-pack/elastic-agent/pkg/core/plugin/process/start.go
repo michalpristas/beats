@@ -26,11 +26,11 @@ func (a *Application) Start(ctx context.Context, t app.Taggable, cfg map[string]
 	a.appLock.Lock()
 	defer a.appLock.Unlock()
 
-	return a.start(ctx, t, cfg, false)
+	return a.start(ctx, t, cfg, false, "start")
 }
 
 // Start starts the application without grabbing the lock.
-func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]interface{}, isRestart bool) (err error) {
+func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]interface{}, isRestart bool, from string) (err error) {
 	defer func() {
 		if err != nil {
 			// inject App metadata
@@ -49,7 +49,8 @@ func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]
 		return nil
 	}
 
-	a.logger.Errorf(">> starting app %v with status %v", a.id, a.state.Status)
+	a.logger.Errorf(">> startin app %s from %s with state %v", a.id, from, a.state.Status)
+	defer a.logger.Errorf(">> startin app %s from %s with state %v finished with pid %d", a.id, from, a.state.Status, a.state.ProcessInfo.PID)
 
 	cfgStr, err := yaml.Marshal(cfg)
 	if err != nil {

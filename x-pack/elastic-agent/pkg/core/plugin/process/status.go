@@ -112,7 +112,7 @@ func (a *Application) restart() {
 	tag := a.tag
 
 	a.setState(state.Restarting, "", nil)
-	err := a.start(ctx, tag, a.restartConfig, true)
+	err := a.start(ctx, tag, a.restartConfig, true, "restart")
 	if err != nil {
 		a.setState(state.Crashed, fmt.Sprintf("failed to restart: %s", err), nil)
 	}
