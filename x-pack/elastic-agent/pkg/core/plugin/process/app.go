@@ -203,15 +203,14 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 
 		a.appLock.Lock()
 		if a.state.ProcessInfo != proc {
+			// TODO: kill original process if possible
 			// already another process started, another watcher is watching instead
 			a.appLock.Unlock()
 			return
 		}
 
 		// stop the watcher
-		if a.state.ProcessInfo != nil {
-			delete(a.watchClosers, a.state.ProcessInfo.PID)
-		}
+		a.stopWatcher(a.state.ProcessInfo)
 
 		// was already stopped by Stop, do not restart
 		if a.state.Status == state.Stopped {
@@ -233,6 +232,15 @@ func (a *Application) watch(ctx context.Context, p app.Taggable, proc *process.I
 		a.start(ctx, p, cfg, true, "watcher")
 		a.appLock.Unlock()
 	}()
+}
+
+func (a *Application) stopWatcher(procInfo *process.Info) {
+	if procInfo != nil {
+		if closer, ok := a.watchClosers[procInfo.PID]; ok {
+			closer()
+			delete(a.watchClosers, procInfo.PID)
+		}
+	}
 }
 
 func (a *Application) waitProc(proc *os.Process) <-chan *os.ProcessState {

@@ -41,8 +41,19 @@ func (a *Application) start(ctx context.Context, t app.Taggable, cfg map[string]
 	// starting only if it's not running
 	// or if it is, then only in case it's restart and this call initiates from restart call
 	if a.Started() && a.state.Status != state.Restarting {
-		// already started if not stopped or crashed
-		return nil
+		if a.state.ProcessInfo == nil {
+			// already started if not stopped or crashed
+			return nil
+		}
+
+		// in case app reported status it might still be running and failure timer
+		// in progress. Stop timer and stop failing process
+		a.stopFailedTimer()
+		a.stopWatcher(a.state.ProcessInfo)
+
+		// kill the process
+		_ = a.state.ProcessInfo.Process.Kill()
+		a.state.ProcessInfo = nil
 	}
 
 	if a.state.Status == state.Restarting && !isRestart {
