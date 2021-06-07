@@ -18,6 +18,7 @@ import (
 
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/program"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
 )
 
 const (
@@ -55,7 +56,9 @@ func TestFetchVerify(t *testing.T) {
 	err := prepareFetchVerifyTests(dropPath, targetPath, targetFilePath, hashTargetFilePath)
 	assert.NoError(t, err)
 
-	downloader := NewDownloader(config)
+	l, _ := logger.New("", false)
+
+	downloader := NewDownloader(config, l)
 	verifier, err := NewVerifier(config, true, nil)
 	assert.NoError(t, err)
 

@@ -6,6 +6,7 @@ package upgrade
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -84,6 +85,7 @@ func UpdateActiveCommit(hash string) error {
 // CleanMarker removes a marker from disk.
 func CleanMarker() error {
 	markerFile := markerFilePath()
+	fmt.Printf(">>> removing cleanup marker %s", markerFile)
 	if err := os.Remove(markerFile); !os.IsNotExist(err) {
 		return err
 	}

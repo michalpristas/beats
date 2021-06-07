@@ -13,17 +13,18 @@ import (
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact/download"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact/download/http"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/release"
 )
 
 // NewDownloader creates a downloader which first checks local directory
 // and then fallbacks to remote if configured.
-func NewDownloader(config *artifact.Config, versionOverride string) (download.Downloader, error) {
+func NewDownloader(config *artifact.Config, versionOverride string, log *logger.Logger) (download.Downloader, error) {
 	cfg, err := snapshotConfig(config, versionOverride)
 	if err != nil {
 		return nil, err
 	}
-	return http.NewDownloader(cfg), nil
+	return http.NewDownloader(cfg, log), nil
 }
 
 func snapshotConfig(config *artifact.Config, versionOverride string) (*artifact.Config, error) {

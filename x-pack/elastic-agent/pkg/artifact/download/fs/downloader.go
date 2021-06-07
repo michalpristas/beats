@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/program"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
 
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
@@ -26,13 +27,15 @@ const (
 type Downloader struct {
 	dropPath string
 	config   *artifact.Config
+	log      *logger.Logger
 }
 
 // NewDownloader creates and configures Elastic Downloader
-func NewDownloader(config *artifact.Config) *Downloader {
+func NewDownloader(config *artifact.Config, log *logger.Logger) *Downloader {
 	return &Downloader{
 		config:   config,
 		dropPath: getDropPath(config),
+		log:      log,
 	}
 }
 
@@ -43,6 +46,7 @@ func (e *Downloader) Download(_ context.Context, spec program.Spec, version stri
 	defer func() {
 		if err != nil {
 			for _, path := range downloadedFiles {
+				e.log.Errorf(">>> Removing [download] %s", path)
 				os.Remove(path)
 			}
 		}

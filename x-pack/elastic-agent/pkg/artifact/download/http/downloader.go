@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/program"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
 
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact"
@@ -33,21 +34,23 @@ var headers = map[string]string{
 type Downloader struct {
 	config *artifact.Config
 	client http.Client
+	log    *logger.Logger
 }
 
 // NewDownloader creates and configures Elastic Downloader
-func NewDownloader(config *artifact.Config) *Downloader {
+func NewDownloader(config *artifact.Config, log *logger.Logger) *Downloader {
 	client := http.Client{Timeout: config.Timeout}
 	rt := withHeaders(client.Transport, headers)
 	client.Transport = rt
-	return NewDownloaderWithClient(config, client)
+	return NewDownloaderWithClient(config, client, log)
 }
 
 // NewDownloaderWithClient creates Elastic Downloader with specific client used
-func NewDownloaderWithClient(config *artifact.Config, client http.Client) *Downloader {
+func NewDownloaderWithClient(config *artifact.Config, client http.Client, log *logger.Logger) *Downloader {
 	return &Downloader{
 		config: config,
 		client: client,
+		log:    log,
 	}
 }
 
@@ -58,6 +61,7 @@ func (e *Downloader) Download(ctx context.Context, spec program.Spec, version st
 	defer func() {
 		if err != nil {
 			for _, path := range downloadedFiles {
+				e.log.Errorf(">>> Removing [download] %s", path)
 				os.Remove(path)
 			}
 		}

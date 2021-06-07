@@ -168,6 +168,7 @@ func migrateStateStore(log *logger.Logger, actionStorePath, stateStorePath strin
 	// delete the actions store file upon successful migration
 	defer func() {
 		if err == nil && actionStoreExits {
+			log.Errorf(">>> Removing [migrateStateStore] %s", stateStorePath)
 			err = actionDiskStore.Delete()
 			if err != nil {
 				log.Errorf("failed to delete action store %s exists: %v", actionStorePath, err)

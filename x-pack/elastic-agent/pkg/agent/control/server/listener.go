@@ -45,6 +45,7 @@ func createListener(log *logger.Logger) (net.Listener, error) {
 
 func cleanupListener(log *logger.Logger) {
 	path := strings.TrimPrefix(control.Address(), "unix://")
+	log.Errorf(">>> Removing [cleanupListener] %s", path)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		log.Debug("%s", errors.New(err, fmt.Sprintf("Failed to cleanup %s", path), errors.TypeFilesystem, errors.M("path", path)))
 	}

@@ -65,15 +65,15 @@ func newDownloader(version string, log *logger.Logger, settings *artifact.Config
 	}
 
 	// try snapshot repo before official
-	snapDownloader, err := snapshot.NewDownloader(settings, version)
+	snapDownloader, err := snapshot.NewDownloader(settings, version, log)
 	if err != nil {
 		return nil, err
 	}
 
 	return composed.NewDownloader(
-		fs.NewDownloader(settings),
+		fs.NewDownloader(settings, log),
 		snapDownloader,
-		http.NewDownloader(settings),
+		http.NewDownloader(settings, log),
 	), nil
 }
 

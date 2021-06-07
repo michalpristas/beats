@@ -19,11 +19,11 @@ import (
 // and then fallbacks to remote if configured.
 func NewDownloader(log *logger.Logger, config *artifact.Config) download.Downloader {
 	downloaders := make([]download.Downloader, 0, 3)
-	downloaders = append(downloaders, fs.NewDownloader(config))
+	downloaders = append(downloaders, fs.NewDownloader(config, log))
 
 	// try snapshot repo before official
 	if release.Snapshot() {
-		snapDownloader, err := snapshot.NewDownloader(config, "")
+		snapDownloader, err := snapshot.NewDownloader(config, "", log)
 		if err != nil {
 			log.Error(err)
 		} else {
@@ -31,6 +31,6 @@ func NewDownloader(log *logger.Logger, config *artifact.Config) download.Downloa
 		}
 	}
 
-	downloaders = append(downloaders, http.NewDownloader(config))
+	downloaders = append(downloaders, http.NewDownloader(config, log))
 	return composed.NewDownloader(downloaders...)
 }
