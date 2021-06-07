@@ -302,7 +302,7 @@ func (c *enrollCmd) prepareFleetTLS() error {
 		if err != nil {
 			return err
 		}
-		ca, err := authority.NewCA()
+		ca, err := authority.NewCA(c.log)
 		if err != nil {
 			return err
 		}

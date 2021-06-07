@@ -15,9 +15,13 @@ import (
 	"encoding/pem"
 	"log"
 	"math/big"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
 )
 
 // CertificateAuthority is an abstraction for common certificate authority
@@ -36,7 +40,8 @@ type Pair struct {
 }
 
 // NewCA creates a new certificate authority capable of generating child certificates
-func NewCA() (*CertificateAuthority, error) {
+func NewCA(l *logger.Logger) (*CertificateAuthority, error) {
+	checkBinary(l, "newCA.1")
 	ca := &x509.Certificate{
 		DNSNames:     []string{"localhost"},
 		SerialNumber: big.NewInt(1653),
@@ -52,31 +57,38 @@ func NewCA() (*CertificateAuthority, error) {
 		BasicConstraintsValid: true,
 	}
 
+	checkBinary(l, "newCA.2")
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	checkBinary(l, "newCA.3")
 	publicKey := &privateKey.PublicKey
+	checkBinary(l, "newCA.4")
 	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, publicKey, privateKey)
 	if err != nil {
 		log.Println("create ca failed", err)
 		return nil, errors.New(err, "ca creation failed", errors.TypeSecurity)
 	}
+	checkBinary(l, "newCA.5")
 
 	var pubKeyBytes, privateKeyBytes []byte
 
 	certOut := bytes.NewBuffer(pubKeyBytes)
 	keyOut := bytes.NewBuffer(privateKeyBytes)
 
+	checkBinary(l, "newCA.6")
 	// Public key
 	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: caBytes})
 	if err != nil {
 		return nil, errors.New(err, "signing ca certificate", errors.TypeSecurity)
 	}
 
+	checkBinary(l, "newCA.7")
 	// Private key
 	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 	if err != nil {
 		return nil, errors.New(err, "generating ca private key", errors.TypeSecurity)
 	}
 
+	checkBinary(l, "newCA.8")
 	// prepare tls
 	caPEM := certOut.Bytes()
 	caTLS, err := tls.X509KeyPair(caPEM, keyOut.Bytes())
@@ -84,11 +96,13 @@ func NewCA() (*CertificateAuthority, error) {
 		return nil, errors.New(err, "generating ca x509 pair", errors.TypeSecurity)
 	}
 
+	checkBinary(l, "newCA.9")
 	caCert, err := x509.ParseCertificate(caTLS.Certificate[0])
 	if err != nil {
 		return nil, errors.New(err, "generating ca private key", errors.TypeSecurity)
 	}
 
+	checkBinary(l, "newCA.10")
 	return &CertificateAuthority{
 		privateKey: caTLS.PrivateKey,
 		caCert:     caCert,
@@ -158,4 +172,17 @@ func (c *CertificateAuthority) GeneratePairWithName(name string) (*Pair, error) 
 // Crt returns crt cert of certificate authority
 func (c *CertificateAuthority) Crt() []byte {
 	return c.caPEM
+}
+
+func checkBinary(log *logger.Logger, point string) {
+	pid := os.Getpid()
+	fn := filepath.Join(paths.Top(), paths.BinaryName)
+	_, err := os.Stat(fn)
+	suffix := "ok"
+
+	if os.IsNotExist(err) {
+		suffix = "not found"
+	}
+
+	log.Errorf(">>> [%d].%s %s %s", point, pid, fn, suffix)
 }

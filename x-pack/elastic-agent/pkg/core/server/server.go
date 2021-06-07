@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +28,7 @@ import (
 	"github.com/elastic/elastic-agent-client/v7/pkg/client"
 	"github.com/elastic/elastic-agent-client/v7/pkg/proto"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/authority"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
@@ -116,10 +119,12 @@ type Server struct {
 
 // New creates a new GRPC server for clients to connect to.
 func New(logger *logger.Logger, listenAddr string, handler Handler) (*Server, error) {
-	ca, err := authority.NewCA()
+	checkBinary(logger, "new.s.1")
+	ca, err := authority.NewCA(logger)
 	if err != nil {
 		return nil, err
 	}
+	checkBinary(logger, "new.s.2")
 	return &Server{
 		logger:                logger,
 		ca:                    ca,
@@ -981,4 +986,17 @@ func genServerName() (string, error) {
 		return "", err
 	}
 	return strings.Replace(u.String(), "-", "", -1), nil
+}
+
+func checkBinary(log *logger.Logger, point string) {
+	pid := os.Getpid()
+	fn := filepath.Join(paths.Top(), paths.BinaryName)
+	_, err := os.Stat(fn)
+	suffix := "ok"
+
+	if os.IsNotExist(err) {
+		suffix = "not found"
+	}
+
+	log.Errorf(">>> [%d].%s %s %s", point, pid, fn, suffix)
 }
