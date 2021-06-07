@@ -19,6 +19,7 @@ import (
 func postInstall() error {
 	// delete the top-level elastic-agent.exe
 	binary := filepath.Join(paths.InstallPath, paths.BinaryName)
+	fmt.Println("postINstall:removing", binary)
 	err := os.Remove(binary)
 	if err != nil {
 		// do not handle does not exist, it should have existed

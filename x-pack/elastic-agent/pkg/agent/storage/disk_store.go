@@ -34,6 +34,7 @@ func (d *DiskStore) Exists() (bool, error) {
 
 // Delete deletes the store file on the disk
 func (d *DiskStore) Delete() error {
+	fmt.Println("ds.Remove.removing", d.target)
 	return os.Remove(d.target)
 }
 
@@ -52,6 +53,7 @@ func (d *DiskStore) Save(in io.Reader) error {
 	}
 
 	// Always clean up the temporary file and ignore errors.
+	fmt.Println("ds.removing", tmpFile)
 	defer os.Remove(tmpFile)
 
 	if _, err := io.Copy(fd, in); err != nil {

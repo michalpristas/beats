@@ -74,6 +74,7 @@ func (v *Verifier) Verify(spec program.Spec, version string, removeOnFailure boo
 
 	defer func() {
 		if removeOnFailure && (!isMatch || err != nil) {
+			fmt.Println("verifu:removing", fullPath)
 			// remove bits so they can be redownloaded
 			os.Remove(fullPath)
 			os.Remove(fullPath + ".sha512")

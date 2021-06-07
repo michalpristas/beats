@@ -7,6 +7,7 @@ package zip
 import (
 	"archive/zip"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -41,6 +42,7 @@ func (i *Installer) Install(ctx context.Context, spec program.Spec, version, ins
 	// cleanup install directory before unzip
 	_, err = os.Stat(installDir)
 	if err == nil || os.IsExist(err) {
+		fmt.Println("removing", installDir)
 		os.RemoveAll(installDir)
 	}
 

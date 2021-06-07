@@ -447,12 +447,14 @@ func (c *enrollCmd) enroll(ctx context.Context, persistentConfig map[string]inte
 
 	// clear action store
 	// fail only if file exists and there was a failure
+	fmt.Println("enr:removing", paths.AgentActionStoreFile())
 	if err := os.Remove(paths.AgentActionStoreFile()); !os.IsNotExist(err) {
 		return err
 	}
 
 	// clear action store
 	// fail only if file exists and there was a failure
+	fmt.Println("enr:removing2", paths.AgentStateStoreFile())
 	if err := os.Remove(paths.AgentStateStoreFile()); !os.IsNotExist(err) {
 		return err
 	}

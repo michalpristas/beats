@@ -250,6 +250,7 @@ func (u *Upgrader) reportUpdating(version string) {
 }
 
 func rollbackInstall(ctx context.Context, hash string) {
+	fmt.Println("rollbackInstall:removing", filepath.Join(paths.Data(), fmt.Sprintf("%s-%s", agentName, hash)))
 	os.RemoveAll(filepath.Join(paths.Data(), fmt.Sprintf("%s-%s", agentName, hash)))
 	ChangeSymlink(ctx, release.ShortCommit())
 }

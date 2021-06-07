@@ -138,7 +138,7 @@ func (b *Monitor) Cleanup(spec program.Spec, pipelineID string) error {
 	if drop == "" {
 		return nil
 	}
-
+	fmt.Println("removing ", drop)
 	return os.RemoveAll(drop)
 }
 

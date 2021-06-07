@@ -6,6 +6,7 @@ package atomic
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -45,10 +46,12 @@ func (i *Installer) Install(ctx context.Context, spec program.Spec, version, ins
 
 	// cleanup install directory before Install
 	if _, err := os.Stat(installDir); err == nil || os.IsExist(err) {
+		fmt.Println("removing", installDir)
 		os.RemoveAll(installDir)
 	}
 
 	if _, err := os.Stat(tempInstallDir); err == nil || os.IsExist(err) {
+		fmt.Println("removing", tempInstallDir)
 		os.RemoveAll(tempInstallDir)
 	}
 
@@ -62,6 +65,7 @@ func (i *Installer) Install(ctx context.Context, spec program.Spec, version, ins
 
 	if err := i.installer.Install(ctx, spec, version, tempInstallDir); err != nil {
 		// cleanup unfinished install
+		fmt.Println("removing", tempInstallDir)
 		if rerr := os.RemoveAll(tempInstallDir); rerr != nil {
 			err = multierror.Append(err, rerr)
 		}
@@ -69,9 +73,11 @@ func (i *Installer) Install(ctx context.Context, spec program.Spec, version, ins
 	}
 
 	if err := os.Rename(tempInstallDir, installDir); err != nil {
+		fmt.Println("removing", installDir)
 		if rerr := os.RemoveAll(installDir); rerr != nil {
 			err = multierror.Append(err, rerr)
 		}
+		fmt.Println("removing", tempInstallDir)
 		if rerr := os.RemoveAll(tempInstallDir); rerr != nil {
 			err = multierror.Append(err, rerr)
 		}

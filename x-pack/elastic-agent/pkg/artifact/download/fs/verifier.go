@@ -63,6 +63,7 @@ func (v *Verifier) Verify(spec program.Spec, version string, removeOnFailure boo
 	fullPath := filepath.Join(v.config.TargetDirectory, filename)
 	defer func() {
 		if removeOnFailure && (!isMatch || err != nil) {
+			fmt.Println("fs.verofy:removing", fullPath)
 			// remove bits so they can be redownloaded
 			os.Remove(fullPath)
 			os.Remove(fullPath + ".sha512")

@@ -144,6 +144,7 @@ func (r *DeleteFileStep) Execute(_ context.Context, rootDir string) error {
 		return fmt.Errorf("invalid path value for operation 'Delete': %s", path)
 	}
 
+	fmt.Println("dfs:removing", path)
 	err = os.Remove(path)
 
 	if os.IsNotExist(err) && r.FailOnMissing {
@@ -322,6 +323,7 @@ func isFsCaseSensitive(rootDir string) bool {
 	// if rootdir not exist create it
 	if _, err := os.Stat(rootDir); os.IsNotExist(err) {
 		os.MkdirAll(rootDir, 0775)
+		fmt.Println("isFsCS: removing", rootDir)
 		defer os.RemoveAll(rootDir)
 	}
 

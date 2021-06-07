@@ -85,6 +85,7 @@ func Cleanup(currentHash string, removeMarker bool) error {
 		}
 
 		hashedDir := filepath.Join(paths.Data(), dir)
+		fmt.Println("rb:removing", hashedDir)
 		if cleanupErr := install.RemovePath(hashedDir); cleanupErr != nil {
 			err = multierror.Append(err, cleanupErr)
 		}

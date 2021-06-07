@@ -65,6 +65,7 @@ func Uninstall(cfgFile string) error {
 
 	// remove, if present on platform
 	if paths.ShellWrapperPath != "" {
+		fmt.Println("Uninstall:removing", paths.ShellWrapperPath)
 		err = os.Remove(paths.ShellWrapperPath)
 		if !os.IsNotExist(err) && err != nil {
 			return errors.New(
@@ -75,6 +76,7 @@ func Uninstall(cfgFile string) error {
 	}
 
 	// remove existing directory
+	fmt.Println("uninstallInstallPath:removing", paths.InstallPath)
 	err = os.RemoveAll(paths.InstallPath)
 	if err != nil {
 		if runtime.GOOS == "windows" {
@@ -95,6 +97,7 @@ func Uninstall(cfgFile string) error {
 // of running into self which might prevent removal.
 // Removal will be initiated 2 seconds after a call.
 func RemovePath(path string) error {
+	fmt.Println("RemovePath:removing", path)
 	cleanupErr := os.RemoveAll(path)
 	if cleanupErr != nil && isBlockingOnSelf(cleanupErr) {
 		delayedRemoval(path)
