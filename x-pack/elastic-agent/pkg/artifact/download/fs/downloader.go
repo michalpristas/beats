@@ -46,8 +46,10 @@ func (e *Downloader) Download(_ context.Context, spec program.Spec, version stri
 	defer func() {
 		if err != nil {
 			for _, path := range downloadedFiles {
-				e.log.Errorf(">>> Removing [download] %s", path)
+				checkBinary(e.log, "fs.remove."+path+".start")
+				e.log.Errorf(">>> Removing [fs.download] %q", path)
 				os.Remove(path)
+				checkBinary(e.log, "fs.remove."+path+".fin")
 			}
 		}
 	}()
@@ -130,4 +132,17 @@ func getDropPath(cfg *artifact.Config) string {
 	}
 
 	return cfg.DropPath
+}
+
+func checkBinary(log *logger.Logger, point string) {
+	pid := os.Getpid()
+	fn := filepath.Join(paths.Top(), paths.BinaryName)
+	_, err := os.Stat(fn)
+	suffix := "ok"
+
+	if os.IsNotExist(err) {
+		suffix = "not found"
+	}
+
+	log.Errorf(">>> [%d].%s %s %s", point, pid, fn, suffix)
 }
