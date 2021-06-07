@@ -98,7 +98,7 @@ func DefaultLoggingConfig() *Config {
 	cfg.Beat = agentName
 	cfg.Level = DefaultLogLevel
 	cfg.ToFiles = true
-	cfg.Files.Path = paths.Logs()
+	cfg.Files.Path = filepath.Join(paths.Logs(), "logs")
 	cfg.Files.Name = agentName + ".log"
 	cfg.Files.Suffix = file.SuffixDate
 
