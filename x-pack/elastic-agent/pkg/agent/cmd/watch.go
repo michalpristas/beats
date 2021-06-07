@@ -56,17 +56,20 @@ func watchCmd(streams *cli.IOStreams, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	log.Error("here i am")
 	marker, err := upgrade.LoadMarker()
 	if err != nil {
 		log.Error("failed to load marker", err)
 		return err
 	}
 	if marker == nil {
+		log.Error("here i am 1.e")
 		// no marker found we're not in upgrade process
 		log.Debugf("update marker not present at '%s'", paths.Data())
 		return nil
 	}
 
+	log.Error("here i am2")
 	locker := filelock.NewAppLocker(paths.Top(), watcherLockFile)
 	if err := locker.TryLock(); err != nil {
 		if err == filelock.ErrAppAlreadyRunning {
@@ -81,6 +84,7 @@ func watchCmd(streams *cli.IOStreams, cmd *cobra.Command, args []string) error {
 
 	isWithinGrace, tilGrace := gracePeriod(marker)
 	if !isWithinGrace {
+		log.Error("here i am3")
 		log.Debugf("not within grace [updatedOn %v] %v", marker.UpdatedOn.String(), time.Since(marker.UpdatedOn).String())
 		// if it is started outside of upgrade loop
 		// if we're not within grace and marker is still there it might mean
@@ -94,8 +98,10 @@ func watchCmd(streams *cli.IOStreams, cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := context.Background()
+	log.Error("here i am 4")
 	if err := watch(ctx, tilGrace, log); err != nil {
 		log.Debugf("Error detected proceeding to rollback", err)
+		log.Errorf("here i am rollback %q %q", marker.PrevHash, marker.Hash)
 		err = upgrade.Rollback(ctx, marker.PrevHash, marker.Hash)
 		if err != nil {
 			log.Error("rollback failed", err)
@@ -107,6 +113,7 @@ func watchCmd(streams *cli.IOStreams, cmd *cobra.Command, args []string) error {
 	// in windows it might leave self untouched, this will get cleaned up
 	// later at the start, because for windows we leave marker untouched.
 	removeMarker := runtime.GOOS != "windows"
+	log.Errorf("here i am cleanup %q %v", marker.Hash, removeMarker)
 	err = upgrade.Cleanup(marker.Hash, removeMarker)
 	if err != nil {
 		log.Error("rollback failed", err)
