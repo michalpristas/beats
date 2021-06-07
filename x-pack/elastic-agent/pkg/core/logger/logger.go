@@ -99,7 +99,7 @@ func DefaultLoggingConfig() *Config {
 	cfg.Level = DefaultLogLevel
 	cfg.ToFiles = true
 	cfg.Files.Path = paths.Logs()
-	cfg.Files.Name = agentName
+	cfg.Files.Name = agentName + ".log"
 	cfg.Files.Suffix = file.SuffixDate
 
 	return &cfg
