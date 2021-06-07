@@ -64,6 +64,7 @@ func createApplication(
 	uc upgraderControl,
 	agentInfo *info.AgentInfo,
 ) (Application, error) {
+	checkBinary(log, "a.1")
 	warn.LogNotGA(log)
 	log.Info("Detecting execution mode")
 	ctx := context.Background()
@@ -73,11 +74,13 @@ func createApplication(
 		return nil, err
 	}
 
+	checkBinary(log, "a.2")
 	if configuration.IsStandalone(cfg.Fleet) {
 		log.Info("Agent is managed locally")
 		return newLocal(ctx, log, pathConfigFile, rawConfig, reexec, statusCtrl, uc, agentInfo)
 	}
 
+	checkBinary(log, "a.3")
 	// not in standalone; both modes require reading the fleet.yml configuration file
 	var store storage.Store
 	store, cfg, err = mergeFleetConfig(rawConfig)
@@ -85,11 +88,13 @@ func createApplication(
 		return nil, err
 	}
 
+	checkBinary(log, "a.5")
 	if configuration.IsFleetServerBootstrap(cfg.Fleet) {
 		log.Info("Agent is in Fleet Server bootstrap mode")
 		return newFleetServerBootstrap(ctx, log, pathConfigFile, rawConfig, statusCtrl, agentInfo)
 	}
 
+	checkBinary(log, "a.6")
 	log.Info("Agent is managed by Fleet")
 	return newManaged(ctx, log, store, cfg, rawConfig, reexec, statusCtrl, agentInfo)
 }

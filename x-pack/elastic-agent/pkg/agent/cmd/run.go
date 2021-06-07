@@ -105,11 +105,19 @@ func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark
 		override(cfg)
 	}
 
+	logger, err := logger.NewFromConfig("", cfg.Settings.LoggingConfig, true)
+	if err != nil {
+		return err
+	}
+
+	checkBinary(logger, "r.1")
+
 	// agent ID needs to stay empty in bootstrap mode
 	createAgentID := true
 	if cfg.Fleet != nil && cfg.Fleet.Server != nil && cfg.Fleet.Server.Bootstrap {
 		createAgentID = false
 	}
+	checkBinary(logger, "r.2")
 	agentInfo, err := info.NewAgentInfoWithLog(defaultLogLevel(cfg), createAgentID)
 	if err != nil {
 		return errors.New(err,
@@ -117,11 +125,7 @@ func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark
 			errors.TypeFilesystem,
 			errors.M(errors.MetaKeyPath, pathConfigFile))
 	}
-
-	logger, err := logger.NewFromConfig("", cfg.Settings.LoggingConfig, true)
-	if err != nil {
-		return err
-	}
+	checkBinary(logger, "r.3")
 
 	// initiate agent watcher
 	if err := upgrade.InvokeWatcher(logger); err != nil {
@@ -129,17 +133,21 @@ func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark
 		logger.Error("failed to invoke rollback watcher", err)
 	}
 
+	checkBinary(logger, "r.4")
 	if allowEmptyPgp, _ := release.PGP(); allowEmptyPgp {
 		logger.Info("Artifact has been built with security disabled. Elastic Agent will not verify signatures of the artifacts.")
 	}
 
+	checkBinary(logger, "r.5")
 	execPath, err := reexecPath()
 	if err != nil {
 		return err
 	}
+	checkBinary(logger, "r.6")
 	rexLogger := logger.Named("reexec")
 	rex := reexec.NewManager(rexLogger, execPath)
 
+	checkBinary(logger, "r.7")
 	statusCtrl := status.NewController(logger)
 
 	// start the control listener
@@ -147,12 +155,14 @@ func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark
 	if err := control.Start(); err != nil {
 		return err
 	}
+	checkBinary(logger, "r.8")
 	defer control.Stop()
 
 	app, err := application.New(logger, pathConfigFile, rex, statusCtrl, control, agentInfo)
 	if err != nil {
 		return err
 	}
+	checkBinary(logger, "r.9")
 
 	serverStopFn, err := setupMetrics(agentInfo, logger, cfg.Settings.DownloadConfig.OS(), cfg.Settings.MonitoringConfig, app)
 	if err != nil {
@@ -164,6 +174,7 @@ func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark
 		return err
 	}
 
+	checkBinary(logger, "r.10")
 	// listen for signals
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
@@ -295,4 +306,17 @@ func setupMetrics(agentInfo *info.AgentInfo, logger *logger.Logger, operatingSys
 
 func isProcessStatsEnabled(cfg *monitoringCfg.MonitoringHTTPConfig) bool {
 	return cfg != nil && cfg.Enabled
+}
+
+func checkBinary(log *logger.Logger, point string) {
+	pid := os.Getpid()
+	fn := filepath.Join(paths.Top(), paths.BinaryName)
+	_, err := os.Stat(fn)
+	suffix := "ok"
+
+	if os.IsNotExist(err) {
+		suffix = "not found"
+	}
+
+	log.Errorf(">>> [%d].%s %s %s", point, pid, fn, suffix)
 }
