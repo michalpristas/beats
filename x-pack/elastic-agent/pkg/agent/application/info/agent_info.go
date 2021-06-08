@@ -13,6 +13,7 @@ import (
 type AgentInfo struct {
 	agentID  string
 	logLevel string
+	appAuth  string
 }
 
 // NewAgentInfoWithLog creates a new agent information.
@@ -30,6 +31,7 @@ func NewAgentInfoWithLog(level string, createAgentID bool) (*AgentInfo, error) {
 	return &AgentInfo{
 		agentID:  agentInfo.ID,
 		logLevel: agentInfo.LogLevel,
+		appAuth:  agentInfo.AppAuth,
 	}, nil
 }
 
@@ -83,4 +85,9 @@ func (*AgentInfo) Version() string {
 // Snapshot returns if this version is a snapshot.
 func (*AgentInfo) Snapshot() bool {
 	return release.Snapshot()
+}
+
+// AppAuth returns app auth token used to communicate with kibana or elasticsearch.
+func (i *AgentInfo) AppAuth() string {
+	return i.appAuth
 }

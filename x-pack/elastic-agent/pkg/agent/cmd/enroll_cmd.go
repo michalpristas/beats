@@ -79,6 +79,7 @@ type enrollCmdFleetServerOption struct {
 	CertKey         string
 	Insecure        bool
 	SpawnAgent      bool
+	AppAuth         string
 }
 
 // enrollCmdOption define all the supported enrollment option.
@@ -233,7 +234,8 @@ func (c *enrollCmd) fleetServerBootstrap(ctx context.Context) (string, error) {
 		c.options.FleetServer.ConnStr, c.options.FleetServer.ServiceToken,
 		c.options.FleetServer.PolicyID,
 		c.options.FleetServer.Host, c.options.FleetServer.Port,
-		c.options.FleetServer.Cert, c.options.FleetServer.CertKey, c.options.FleetServer.ElasticsearchCA)
+		c.options.FleetServer.Cert, c.options.FleetServer.CertKey, c.options.FleetServer.ElasticsearchCA,
+		c.options.FleetServer.AppAuth)
 	if err != nil {
 		return "", err
 	}
@@ -413,7 +415,7 @@ func (c *enrollCmd) enroll(ctx context.Context, persistentConfig map[string]inte
 		return err
 	}
 
-	agentConfig, err := c.createAgentConfig(resp.Item.ID, persistentConfig)
+	agentConfig, err := c.createAgentConfig(resp.Item.ID, persistentConfig, c.options.FleetServer.AppAuth)
 	if err != nil {
 		return err
 	}
@@ -423,7 +425,8 @@ func (c *enrollCmd) enroll(ctx context.Context, persistentConfig map[string]inte
 			c.options.FleetServer.ConnStr, c.options.FleetServer.ServiceToken,
 			c.options.FleetServer.PolicyID,
 			c.options.FleetServer.Host, c.options.FleetServer.Port,
-			c.options.FleetServer.Cert, c.options.FleetServer.CertKey, c.options.FleetServer.ElasticsearchCA)
+			c.options.FleetServer.Cert, c.options.FleetServer.CertKey, c.options.FleetServer.ElasticsearchCA,
+			c.options.FleetServer.AppAuth)
 		if err != nil {
 			return err
 		}
@@ -718,7 +721,11 @@ func storeAgentInfo(s saver, reader io.Reader) error {
 	return nil
 }
 
-func createFleetServerBootstrapConfig(connStr string, serviceToken string, policyID string, host string, port uint16, cert string, key string, esCA string) (*configuration.FleetAgentConfig, error) {
+func createFleetServerBootstrapConfig(
+	connStr, serviceToken, policyID, host string,
+	port uint16,
+	cert, key, esCA, appAuth string,
+) (*configuration.FleetAgentConfig, error) {
 	es, err := configuration.ElasticsearchFromConnStr(connStr, serviceToken)
 	if err != nil {
 		return nil, err
@@ -733,6 +740,12 @@ func createFleetServerBootstrapConfig(connStr string, serviceToken string, polic
 	}
 	if port == 0 {
 		port = defaultFleetServerPort
+	}
+	if appAuth != "" {
+		if es.Headers == nil {
+			es.Headers = make(map[string]string)
+		}
+		es.Headers[appAuthKey] = appAuth
 	}
 	cfg := configuration.DefaultFleetAgentConfig()
 	cfg.Enabled = true
@@ -774,9 +787,13 @@ func createFleetConfigFromEnroll(accessAPIKey string, cli remote.Config) (*confi
 	return cfg, nil
 }
 
-func (c *enrollCmd) createAgentConfig(agentID string, pc map[string]interface{}) (map[string]interface{}, error) {
+func (c *enrollCmd) createAgentConfig(agentID string, pc map[string]interface{}, appAuth string) (map[string]interface{}, error) {
 	agentConfig := map[string]interface{}{
 		"id": agentID,
+	}
+
+	if appAuth != "" {
+		agentConfig["x_elastic_app_auth"] = appAuth
 	}
 
 	if c.options.Staging != "" {

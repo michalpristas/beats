@@ -19,6 +19,7 @@ type AgentInfo interface {
 	AgentID() string
 	Version() string
 	Snapshot() bool
+	AppAuth() string
 }
 
 // RuleList is a container that allow the same tree to be executed on multiple defined Rule.
@@ -90,6 +91,8 @@ func (r *RuleList) MarshalYAML() (interface{}, error) {
 			name = "fix_stream"
 		case *InsertDefaultsRule:
 			name = "insert_defaults"
+		case *InjectAuthHeadersRule:
+			name = "inject_auth_headers"
 		default:
 			return nil, fmt.Errorf("unknown rule of type %T", rule)
 		}
@@ -175,6 +178,8 @@ func (r *RuleList) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			r = &FixStreamRule{}
 		case "insert_defaults":
 			r = &InsertDefaultsRule{}
+		case "inject_auth_headers":
+			r = &InjectAuthHeadersRule{}
 		default:
 			return fmt.Errorf("unknown rule of type %s", name)
 		}
@@ -1503,6 +1508,65 @@ func InsertDefaults(path string, selectors ...Selector) *InsertDefaultsRule {
 		Selectors: selectors,
 		Path:      path,
 	}
+}
+
+// InjectAuthHeadersRule injects headers into output.
+type InjectAuthHeadersRule struct{}
+
+// Apply injects headers into output.
+func (r *InjectAuthHeadersRule) Apply(agentInfo AgentInfo, ast *AST) (err error) {
+	defer func() {
+		if err != nil {
+			err = errors.New(err, "failed to inject headers into configuration")
+		}
+	}()
+
+	appAuth := agentInfo.AppAuth()
+	if appAuth == "" {
+		return nil
+	}
+
+	outputsNode, found := Lookup(ast, "outputs")
+	if !found {
+		return nil
+	}
+
+	elasticsearchNode, found := outputsNode.Find("elasticsearch")
+	if found {
+		headersNode, found := elasticsearchNode.Find("headers")
+		if found {
+			headersDict, ok := headersNode.Value().(*Dict)
+			if !ok {
+				return errors.New("headers not a dictionary")
+			}
+
+			headersDict.value = append(headersDict.value, &Key{
+				name:  "X-Elastic-App-Auth",
+				value: &StrVal{value: appAuth},
+			})
+
+		} else {
+			headersDict := NewDict([]Node{&Key{
+				name:  "X-Elastic-App-Auth",
+				value: &StrVal{value: appAuth},
+			}})
+			elasticsearchDict, ok := elasticsearchNode.Value().(*Dict)
+			if !ok {
+				return errors.New("elasticsearch output is not a dictionary")
+			}
+			elasticsearchDict.value = append(elasticsearchDict.value, &Key{
+				name:  "headers",
+				value: headersDict,
+			})
+		}
+	}
+
+	return nil
+}
+
+// InjectAuthHeaders creates a InjectAuthHeadersRule
+func InjectAuthHeaders() *InjectAuthHeadersRule {
+	return &InjectAuthHeadersRule{}
 }
 
 // NewRuleList returns a new list of rules to be executed.

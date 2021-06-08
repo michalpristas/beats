@@ -29,6 +29,7 @@ const maxRetriesloadAgentInfo = 5
 
 type persistentAgentInfo struct {
 	ID             string                                 `json:"id" yaml:"id" config:"id"`
+	AppAuth        string                                 `json:"x_elastic_app_auth" yaml:"x_elastic_app_auth" config:"x_elastic_app_auth"`
 	LogLevel       string                                 `json:"logging.level,omitempty" yaml:"logging.level,omitempty" config:"logging.level,omitempty"`
 	MonitoringHTTP *monitoringConfig.MonitoringHTTPConfig `json:"monitoring.http,omitempty" yaml:"monitoring.http,omitempty" config:"monitoring.http,omitempty"`
 }

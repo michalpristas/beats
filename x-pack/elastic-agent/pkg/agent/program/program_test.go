@@ -499,3 +499,7 @@ func (*fakeAgentInfo) Version() string {
 func (*fakeAgentInfo) Snapshot() bool {
 	return false
 }
+
+func (*fakeAgentInfo) AppAuth() string {
+	return "test-header"
+}

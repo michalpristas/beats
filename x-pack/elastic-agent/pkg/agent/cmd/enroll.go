@@ -59,6 +59,7 @@ func addEnrollFlags(cmd *cobra.Command) {
 	cmd.Flags().Uint16P("fleet-server-port", "", 0, "Fleet Server HTTP binding port (overrides the policy)")
 	cmd.Flags().StringP("fleet-server-cert", "", "", "Certificate to use for exposed Fleet Server HTTPS endpoint")
 	cmd.Flags().StringP("fleet-server-cert-key", "", "", "Private key to use for exposed Fleet Server HTTPS endpoint")
+	cmd.Flags().StringP("fleet-server-x-app-auth", "", "", "App auth token used for kibana and elasticsearch")
 	cmd.Flags().BoolP("fleet-server-insecure-http", "", false, "Expose Fleet Server over HTTP (not recommended; insecure)")
 	cmd.Flags().StringP("certificate-authorities", "a", "", "Comma separated list of root certificate for server verifications")
 	cmd.Flags().StringP("ca-sha256", "p", "", "Comma separated list of certificate authorities hash pins used for certificate verifications")
@@ -81,6 +82,7 @@ func buildEnrollmentFlags(cmd *cobra.Command, url string, token string) []string
 	fPort, _ := cmd.Flags().GetUint16("fleet-server-port")
 	fCert, _ := cmd.Flags().GetString("fleet-server-cert")
 	fCertKey, _ := cmd.Flags().GetString("fleet-server-cert-key")
+	fAppAuth, _ := cmd.Flags().GetString("fleet-server-x-app-auth")
 	fInsecure, _ := cmd.Flags().GetBool("fleet-server-insecure-http")
 	ca, _ := cmd.Flags().GetString("certificate-authorities")
 	sha256, _ := cmd.Flags().GetString("ca-sha256")
@@ -127,6 +129,10 @@ func buildEnrollmentFlags(cmd *cobra.Command, url string, token string) []string
 	if fCertKey != "" {
 		args = append(args, "--fleet-server-cert-key")
 		args = append(args, fCertKey)
+	}
+	if fAppAuth != "" {
+		args = append(args, "--fleet-server-x-app-auth")
+		args = append(args, fAppAuth)
 	}
 	if fInsecure {
 		args = append(args, "--fleet-server-insecure-http")
@@ -211,6 +217,7 @@ func enroll(streams *cli.IOStreams, cmd *cobra.Command, args []string) error {
 	enrollmentToken, _ := cmd.Flags().GetString("enrollment-token")
 	fServer, _ := cmd.Flags().GetString("fleet-server-es")
 	fElasticSearchCA, _ := cmd.Flags().GetString("fleet-server-es-ca")
+	fAppAuth, _ := cmd.Flags().GetString("fleet-server-x-app-auth")
 	fServiceToken, _ := cmd.Flags().GetString("fleet-server-service-token")
 	fPolicy, _ := cmd.Flags().GetString("fleet-server-policy")
 	fHost, _ := cmd.Flags().GetString("fleet-server-host")
@@ -246,6 +253,7 @@ func enroll(streams *cli.IOStreams, cmd *cobra.Command, args []string) error {
 			CertKey:         fCertKey,
 			Insecure:        fInsecure,
 			SpawnAgent:      !fromInstall,
+			AppAuth:         fAppAuth,
 		},
 	}
 
