@@ -114,6 +114,8 @@ func (e *Controller) Set(vars []*transpiler.Vars) {
 	e.vars = vars
 	e.lock.Unlock()
 
+	e.logger.Errorf(">>> setting vars %v", vars)
+
 	if ast != nil {
 		err := e.update()
 		if err != nil {
@@ -136,6 +138,7 @@ func (e *Controller) update() error {
 	ast := rawAst.Clone()
 	inputs, ok := transpiler.Lookup(ast, "inputs")
 	if ok {
+		e.logger.Errorf(">>> rendering with vars %v", varsArray)
 		renderedInputs, err := transpiler.RenderInputs(inputs, varsArray)
 		if err != nil {
 			return err
