@@ -10,7 +10,6 @@ import (
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/configuration"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/logger"
-	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/plugin/process"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/core/state"
 )
 
@@ -54,13 +53,7 @@ func (o *operationConfig) Check(_ context.Context, _ Application) (bool, error) 
 func (o *operationConfig) Run(ctx context.Context, application Application) (err error) {
 	defer func() {
 		if err != nil {
-			// application failed to apply config but is running.
-			s := state.Degraded
-			if errors.Is(err, process.ErrAppNotRunning) {
-				s = state.Failed
-			}
-
-			application.SetState(s, err.Error(), nil)
+			application.SetState(state.Failed, err.Error(), nil)
 		}
 	}()
 	return application.Configure(ctx, o.cfg)
