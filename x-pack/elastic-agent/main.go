@@ -6,7 +6,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -20,6 +23,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to initialize: %v\n", err)
 		os.Exit(1)
 	}
+
+	go func() {
+		log.Println(http.ListenAndServe(":8080", nil))
+	}()
 
 	rand.Seed(time.Now().UnixNano())
 	command := cmd.NewCommand()
