@@ -7,6 +7,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -59,6 +62,11 @@ func newRunCommandWithArgs(_ []string, streams *cli.IOStreams) *cobra.Command {
 }
 
 func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark service as stopped.
+
+	go func() {
+		log.Println(http.ListenAndServe(":8080", nil))
+	}()
+
 	// After this is run, the service is considered by the OS to be stopped.
 	// This must be the first deferred cleanup task (last to execute).
 	defer service.NotifyTermination()
