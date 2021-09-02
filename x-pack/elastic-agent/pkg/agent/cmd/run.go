@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -60,15 +61,18 @@ func newRunCommandWithArgs(_ []string, streams *cli.IOStreams) *cobra.Command {
 }
 
 func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark service as stopped.
-	// After this is run, the service is considered by the OS to be stopped.
-	// This must be the first deferred cleanup task (last to execute).
-	defer service.NotifyTermination()
-
 	locker := filelock.NewAppLocker(paths.Data(), paths.AgentLockFileName)
 	if err := locker.TryLock(); err != nil {
 		return err
 	}
 	defer locker.Unlock()
+
+	// After this is run, the service is considered by the OS to be stopped.
+	// This must be the first deferred cleanup task (last to execute).
+	defer func() {
+		service.NotifyTermination()
+		time.After(50 * time.Millisecond)
+	}()
 
 	service.BeforeRun()
 	defer service.Cleanup()
