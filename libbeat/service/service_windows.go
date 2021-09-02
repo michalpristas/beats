@@ -132,5 +132,5 @@ func ProcessWindowsControlEvents(stopCallback func()) {
 
 // WaitExecutionDone returns only after stop was reported to service manager.
 func WaitExecutionDone() {
-	<-serviceInstance.done
+	<-serviceInstance.executeFinished
 }
