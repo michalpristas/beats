@@ -43,7 +43,6 @@ var serviceInstance = &beatService{
 // Execute runs the beat service with the arguments and manages changes that
 // occur in the environment or runtime that may affect the beat.
 func (m *beatService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	defer close(m.executeFinished)
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
@@ -88,6 +87,8 @@ const couldNotConnect syscall.Errno = 1063
 // stopCallback function is called when the Stop/Shutdown
 // request is received.
 func ProcessWindowsControlEvents(stopCallback func()) {
+	defer close(serviceInstance.executeFinished)
+
 	isInteractive, err := svc.IsAnInteractiveSession()
 	if err != nil {
 		logp.Err("IsAnInteractiveSession: %v", err)
