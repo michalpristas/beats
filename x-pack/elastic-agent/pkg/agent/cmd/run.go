@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -71,7 +70,7 @@ func run(streams *cli.IOStreams, override cfgOverrider) error { // Windows: Mark
 	// This must be the first deferred cleanup task (last to execute).
 	defer func() {
 		service.NotifyTermination()
-		time.After(50 * time.Millisecond)
+		service.WaitExecutionDone()
 	}()
 
 	service.BeforeRun()

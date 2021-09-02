@@ -29,18 +29,21 @@ import (
 )
 
 type beatService struct {
-	stopCallback func()
-	done         chan struct{}
+	stopCallback    func()
+	done            chan struct{}
+	executeFinished chan struct{}
 }
 
 var serviceInstance = &beatService{
-	stopCallback: nil,
-	done:         make(chan struct{}, 0),
+	stopCallback:    nil,
+	done:            make(chan struct{}, 0),
+	executeFinished: make(chan struct{}, 0),
 }
 
 // Execute runs the beat service with the arguments and manages changes that
 // occur in the environment or runtime that may affect the beat.
 func (m *beatService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+	defer close(m.executeFinished)
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
@@ -124,4 +127,9 @@ func ProcessWindowsControlEvents(stopCallback func()) {
 	}
 
 	logp.Err("Windows service setup failed: %+v", err)
+}
+
+// WaitExecutionDone returns only after stop was reported to service manager.
+func WaitExecutionDone() {
+	<-serviceInstance.done
 }
