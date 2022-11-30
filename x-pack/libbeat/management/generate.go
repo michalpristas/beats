@@ -41,7 +41,11 @@ func (r *TransformRegister) SetTransform(transform func(*proto.UnitExpectedConfi
 func (r *TransformRegister) Transform(cfg *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
 	// If no transform is registered, fallback to a basic setup
 	if r.transformFunc == nil {
-		streamList, err := CreateInputsFromStreams(cfg, "log", agentInfo)
+		streamType := "log"
+		if parentType := cfg.GetType(); parentType != "" {
+			streamType = parentType
+		}
+		streamList, err := CreateInputsFromStreams(cfg, streamType, agentInfo)
 		if err != nil {
 			return nil, fmt.Errorf("error creating input list from fallback function: %w", err)
 		}
